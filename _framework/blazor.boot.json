@@ -7,7 +7,7 @@
   "linkerEnabled": true,
   "resources": {
     "assembly": {
-      "MACEL94.github.io.dll": "sha256-+nzLHmgW0XsYbzRm9SrMhX7M12xRuvK3z9ac8hFk3Jg=",
+      "MACEL94.github.io.dll": "sha256-esSIzzjP+nIkvLM5YCgd2RNy5jT6b1vllJniSK9ub+w=",
       "Microsoft.AspNetCore.Components.dll": "sha256-oqopsJ4TfgdSM+wC+ZMWFuEQDehUG625fuW\/ERbMXJU=",
       "Microsoft.AspNetCore.Components.Forms.dll": "sha256-G4pAo5AEKqoYme0xsn\/jYga7ednDqQnXMIiIWKf7txI=",
       "Microsoft.AspNetCore.Components.Web.dll": "sha256-cN1oa5Lu26ET+K7XnYswf7EueXbIlWGz8WaI4uV0\/Rk=",
