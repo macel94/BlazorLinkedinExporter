@@ -1,0 +1,75 @@
+openapi: 3.1.0
+info:
+  version: '1.0.0'
+  title: 'LinkedinProfileAPI'
+  license:
+    name: MIT
+servers:
+- url: https://api.linkedin.com/v2
+  variables: {}
+paths:
+  /me:
+    get:
+      tags:
+      - User
+      summary: GetProfile
+      operationId: GetProfile
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          headers: {}
+      deprecated: false
+    parameters: []
+  /emailAddress:
+    get:
+      tags:
+      - User
+      summary: GetEmail
+      operationId: GetEmail
+      parameters:
+      - name: q
+        in: query
+        description: ''
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+          examples:
+          - members
+      - name: projection
+        in: query
+        description: ''
+        required: true
+        style: form
+        explode: true
+        schema:
+          type: string
+          examples:
+          - (elements*(handle~))
+      responses:
+        '200':
+          description: ''
+          headers: {}
+      deprecated: false
+    parameters: []
+components:
+  schemas: {}
+  securitySchemes:
+    oauth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://www.linkedin.com/oauth/v2/authorization
+          tokenUrl: https://www.linkedin.com/oauth/v2/accessToken
+          scopes:
+            r_liteprofile: "lite profile"
+            r_emailaddress: "email"
+security:
+- oauth2:
+  - r_liteprofile
+  - r_emailaddress
+tags:
+- name: User
+  description: ''
