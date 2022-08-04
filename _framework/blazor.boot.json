@@ -10,7 +10,7 @@
   "resources": {
     "assembly": {
       "Blazored.LocalStorage.dll": "sha256-6RRoYeDP3d0xabXmcCMF66wXeJlXVPem28Trs8sQiis=",
-      "MACEL94.github.io.dll": "sha256-5djiN18iO\/0\/SgZcECti+bG++VIH6ZZCIth2ET9JlNo=",
+      "MACEL94.github.io.dll": "sha256-4j82+gu4N1RCnsZoDqKTepVH9qcljQSX5AT7JmNMSsY=",
       "Microsoft.AspNetCore.Authorization.dll": "sha256-FmE924+dmmze8bcv2pUnJm0CXCdoZAiLWB9zVKtNuX8=",
       "Microsoft.AspNetCore.Components.Authorization.dll": "sha256-cCdMEeFEbH2L09JM4zWhhT7ddxEnMgXT1Ow23g+LUxE=",
       "Microsoft.AspNetCore.Components.dll": "sha256-hQsYO6vNB\/gURIac9R\/8t8KuDu+DPAsVm29k1l1zcYE=",
