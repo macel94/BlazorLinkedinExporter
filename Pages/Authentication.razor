@@ -1,0 +1,248 @@
+@page "/authentication/{*pageRoute}"
+@page "/authentication/{action?}"
+
+@using Blazored.LocalStorage
+@using MACEL94.github.io.Services.Authentication
+@using System.Net.Http.Headers
+@using System.Text
+@inject AuthStateProvider AuthProvider
+@inject NavigationManager Navigation
+@inject ILocalStorageService LocalStorageService
+@inject HttpClient Client
+
+<h1>
+    Access Token Result
+</h1>
+<p>
+    @accessTokenResult
+</p>
+
+<h1>
+    Error
+</h1>
+<p>
+    @error
+</p>
+
+<h1>
+    Nav uri
+</h1>
+<p>
+    @Navigation.Uri
+</p>
+
+
+
+@code {
+    [Parameter]
+    public string? PageRoute { get; set; }
+    [Parameter]
+    public string? Action { get; set; } = null;
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "code")]
+    public string? AuthToken { get; set; }
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "state")]
+    public string? State { get; set; }
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "access_token")]
+    public string? AccessToken { get; set; }
+    private string error = "";
+    private string accessTokenResult = "";
+
+    protected async override Task OnInitializedAsync()
+    {
+        try
+        {
+            await OnInitializedAsyncImpl();
+        }
+        catch (Exception ex)
+        {
+            error = ex.ToString();
+        }
+    }
+
+    private async Task OnInitializedAsyncImpl()
+    {
+        if (Action == null)
+        {
+            error = new ArgumentNullException(nameof(Action)).ToString();
+            return;
+        }
+
+        if (LocalStorageService == null)
+        {
+            error = new ArgumentNullException(nameof(LocalStorageService)).ToString();
+            return;
+        }
+
+        if (Action.Equals("logout"))
+        {
+            await LocalStorageService.RemoveItemAsync("authToken");
+            AuthProvider.NotifyUserLogout();
+            Navigation.NavigateTo("/");
+            return;
+        }
+
+        @if (Action.Equals("login"))
+        {
+            await RedirectToAuthLoginAsync();
+            return;
+        }
+
+        //TODO: MANAGE https://docs.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow?view=li-lms-2022-07&tabs=HTTPS#failed-requests
+        //error - A code indicating one of these errors:
+        //user_cancelled_login - The member declined to log in to their LinkedIn account.
+        //user_cancelled_authorize - The member refused to authorize the permissions request from your application.
+        //error_description - A URL-encoded textual description that summarizes the error.
+
+
+        if (Action.Equals("login-callback"))
+        {
+            if (AuthToken == null)
+            {
+                AuthToken = await LocalStorageService.GetItemAsync<string>("id_token");
+                if (AuthToken == null)
+                {
+                    error = new ArgumentNullException(nameof(AuthToken)).ToString();
+                    return;
+                }
+
+                if (AccessToken != null)
+                {
+                    await LocalStorageService.SetItemAsync("authToken", AccessToken);
+                    var claims = JwtParser.ParseClaimsFromJwt(AccessToken ?? "");
+                    AuthProvider.NotifyUserAuthentication((claims.FirstOrDefault(x => x.Type.Equals("email"))?.Value ?? ""));
+                    Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", AccessToken);
+                    Navigation.NavigateTo("/");
+                }
+            }
+            else
+            {
+                await LocalStorageService.SetItemAsync("id_token", AuthToken);
+            }
+            //TODO
+            //if (State == null || !State.Equals(Code.State))
+            //{
+            //    throw new ArgumentNullException(nameof(State), $"{nameof(State)} not present or different from what expected");
+            //}
+
+            await GetAccessTokenAsync(AuthToken);
+        }
+
+        await base.OnInitializedAsync();
+    }
+
+    private async Task GetAccessTokenAsync(string authToken)
+    {
+        Client.Timeout = TimeSpan.FromMinutes(1);
+        Client.DefaultRequestHeaders.Clear();
+        string encodedBasicAuth = Convert.ToBase64String(
+            Encoding.GetEncoding("ISO-8859-1")
+                .GetBytes(Code.ClientId + ":")
+        );
+        Client.DefaultRequestHeaders.Add("Authorization", "Basic " + encodedBasicAuth);
+        //Already specified in content being of type FormUrlEncodedContent anyway
+        //Client.DefaultRequestHeaders.TryAddWithoutValidation("Content-Type", "application/x-www-form-urlencoded");
+        //Client.DefaultRequestHeaders.Host = "www.linkedin.com";
+        //Client.DefaultRequestHeaders.AcceptEncoding.Clear();
+        //Client.DefaultRequestHeaders.AcceptEncoding.ParseAdd("gzip");
+        //Client.DefaultRequestHeaders.AcceptEncoding.ParseAdd("deflate");
+        //Client.DefaultRequestHeaders.AcceptEncoding.ParseAdd("br");
+        //Client.DefaultRequestHeaders.Accept.Clear();
+        //Client.DefaultRequestHeaders.Accept.ParseAdd("*/*");
+
+        var codeVerifier = await LocalStorageService.GetItemAsync<string>("code_verifier");
+        var uri = new Uri(Navigation.Uri);
+        var baseRedirect = $"{uri.Scheme}://{uri.Authority}";
+
+        var parameters = new Dictionary<string, object?>
+                            {
+                                {"code", authToken},
+                                {"grant_type", "authorization_code"},
+                                {"client_id", Code.ClientId},
+                                {"code_verifier", codeVerifier},
+                                {"redirect_uri", $"{baseRedirect}/authentication/login-callback"},
+                            };
+        var getTestValue = Navigation.GetUriWithQueryParameters("https://www.linkedin.com/oauth/v2/accessToken", parameters);
+
+        var httpRequestMessage = new HttpRequestMessage
+            {
+                RequestUri = new Uri(getTestValue),
+                Method = HttpMethod.Get
+            };
+
+        //NO PREFLIGHT! if we don't do this we get CORS
+        WebAssemblyHttpRequestMessageExtensions.SetBrowserRequestMode(httpRequestMessage, BrowserRequestMode.NoCors);
+        var result = await Client.SendAsync(httpRequestMessage);
+        if (result.IsSuccessStatusCode)
+        {
+            accessTokenResult = result.ToString();
+            //var response = postResult.Content.ToString();
+            //await LocalStorageService.SetItemAsync("authToken", response?.AccessToken);
+            //var claims = JwtParser.ParseClaimsFromJwt(response?.AccessToken ?? "");
+            //AuthProvider.NotifyUserAuthentication((claims.FirstOrDefault(x => x.Type.Equals("email"))?.Value ?? ""));
+            //Navigation.NavigateTo("/");
+        }
+        else
+        {
+            error = result.ToString();
+        }
+
+        //var data = new KeyValuePair<string, string>[]
+        //{
+        //   new ("code", authToken),
+        //   new ("grant_type", "authorization_code"),
+        //   new ("client_id", Code.ClientId),
+        //   new ("code_verifier", codeVerifier),
+        //   new ("redirect_uri", $"{baseRedirect}/authentication/login-callback"),
+        //};
+        //var httpRequestMessage = new HttpRequestMessage
+        //    {
+        //        RequestUri = new Uri("https://www.linkedin.com/oauth/v2/accessToken"),
+        //        Content = new FormUrlEncodedContent(data),
+        //        Method = HttpMethod.Post
+        //    };
+
+        ////NO PREFLIGHT! if we don't do this we get CORS
+        //WebAssemblyHttpRequestMessageExtensions.SetBrowserRequestMode(httpRequestMessage, BrowserRequestMode.NoCors);
+        //var postResult = await Client.SendAsync(httpRequestMessage);
+        //if (postResult.IsSuccessStatusCode)
+        //{
+        //    accessTokenResult = postResult.ToString();
+        //    //var response = postResult.Content.ToString();
+        //    //await LocalStorageService.SetItemAsync("authToken", response?.AccessToken);
+        //    //var claims = JwtParser.ParseClaimsFromJwt(response?.AccessToken ?? "");
+        //    //AuthProvider.NotifyUserAuthentication((claims.FirstOrDefault(x => x.Type.Equals("email"))?.Value ?? ""));
+        //    //Navigation.NavigateTo("/");
+        //}
+        //else
+        //{
+        //    error = postResult.ToString();
+        //}
+    }
+
+    private async Task RedirectToAuthLoginAsync()
+    {
+        Code.Init();
+
+        var uri = new Uri(Navigation.Uri);
+        var baseRedirect = $"{uri.Scheme}://{uri.Authority}";
+        var parameters = new Dictionary<string, object?>
+                            {
+                                {"client_id", Code.ClientId},
+                                {"response_type", "code"},
+                                {"redirect_uri", $"{baseRedirect}/authentication/login-callback"},
+                                {"code_challenge_method", "S256"},
+                                {"code_challenge", Code.CodeChallenge},
+                                {"scope", "r_liteprofile,r_emailaddress"},
+                                {"state", Code.State}
+                            };
+
+        await LocalStorageService.SetItemAsync("code_challenge", Code.CodeChallenge);
+        await LocalStorageService.SetItemAsync("code_verifier", Code.CodeVerifier);
+
+        Navigation.NavigateTo(Navigation.GetUriWithQueryParameters("https://www.linkedin.com/oauth/v2/authorization", parameters), true);
+    }
+}
