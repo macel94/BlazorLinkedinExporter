@@ -9,6 +9,7 @@
 @inject NavigationManager Navigation
 @inject ILocalStorageService LocalStorageService
 @inject HttpClient Client
+@inject IJSRuntime JS
 
 <h1>
     Access Token Result
@@ -50,6 +51,11 @@
     public string? AccessToken { get; set; }
     private string error = "";
     private string accessTokenResult = "";
+
+    //For the accessToken get by form part
+    private string RedirectUri = "";
+    private string CodeVerifier = "";
+    private EditForm EditFormRef = new EditForm();
 
     protected async override Task OnInitializedAsync()
     {
@@ -142,16 +148,15 @@
             Encoding.GetEncoding("ISO-8859-1")
                 .GetBytes(Code.ClientId + ":")
         );
-        Client.DefaultRequestHeaders.Add("Authorization", "Basic " + encodedBasicAuth);
-        //Already specified in content being of type FormUrlEncodedContent anyway
-        //Client.DefaultRequestHeaders.TryAddWithoutValidation("Content-Type", "application/x-www-form-urlencoded");
-        //Client.DefaultRequestHeaders.Host = "www.linkedin.com";
-        //Client.DefaultRequestHeaders.AcceptEncoding.Clear();
-        //Client.DefaultRequestHeaders.AcceptEncoding.ParseAdd("gzip");
-        //Client.DefaultRequestHeaders.AcceptEncoding.ParseAdd("deflate");
-        //Client.DefaultRequestHeaders.AcceptEncoding.ParseAdd("br");
-        //Client.DefaultRequestHeaders.Accept.Clear();
-        //Client.DefaultRequestHeaders.Accept.ParseAdd("*/*");
+        var authorization = "Basic " + encodedBasicAuth;
+        Client.DefaultRequestHeaders.Add("Authorization", authorization);
+        Client.DefaultRequestHeaders.Host = "www.linkedin.com";
+        Client.DefaultRequestHeaders.AcceptEncoding.Clear();
+        Client.DefaultRequestHeaders.AcceptEncoding.ParseAdd("gzip");
+        Client.DefaultRequestHeaders.AcceptEncoding.ParseAdd("deflate");
+        Client.DefaultRequestHeaders.AcceptEncoding.ParseAdd("br");
+        Client.DefaultRequestHeaders.Accept.Clear();
+        Client.DefaultRequestHeaders.Accept.ParseAdd("*/*");
 
         var codeVerifier = await LocalStorageService.GetItemAsync<string>("code_verifier");
         var uri = new Uri(Navigation.Uri);
@@ -167,50 +172,18 @@
                             };
         var getTestValue = Navigation.GetUriWithQueryParameters("https://www.linkedin.com/oauth/v2/accessToken", parameters);
 
-        var httpRequestMessage = new HttpRequestMessage
-            {
-                RequestUri = new Uri(getTestValue),
-                Method = HttpMethod.Get
-            };
-
-        //NO PREFLIGHT! if we don't do this we get CORS
-        WebAssemblyHttpRequestMessageExtensions.SetBrowserRequestMode(httpRequestMessage, BrowserRequestMode.NoCors);
-        var result = await Client.SendAsync(httpRequestMessage);
-        if (result.IsSuccessStatusCode)
-        {
-            accessTokenResult = result.ToString();
-            //var response = postResult.Content.ToString();
-            //await LocalStorageService.SetItemAsync("authToken", response?.AccessToken);
-            //var claims = JwtParser.ParseClaimsFromJwt(response?.AccessToken ?? "");
-            //AuthProvider.NotifyUserAuthentication((claims.FirstOrDefault(x => x.Type.Equals("email"))?.Value ?? ""));
-            //Navigation.NavigateTo("/");
-        }
-        else
-        {
-            error = result.ToString();
-        }
-
-        //var data = new KeyValuePair<string, string>[]
-        //{
-        //   new ("code", authToken),
-        //   new ("grant_type", "authorization_code"),
-        //   new ("client_id", Code.ClientId),
-        //   new ("code_verifier", codeVerifier),
-        //   new ("redirect_uri", $"{baseRedirect}/authentication/login-callback"),
-        //};
         //var httpRequestMessage = new HttpRequestMessage
         //    {
-        //        RequestUri = new Uri("https://www.linkedin.com/oauth/v2/accessToken"),
-        //        Content = new FormUrlEncodedContent(data),
-        //        Method = HttpMethod.Post
+        //        RequestUri = new Uri(getTestValue),
+        //        Method = HttpMethod.Get
         //    };
 
-        ////NO PREFLIGHT! if we don't do this we get CORS
+        //NO PREFLIGHT! if we don't do this we get CORS
         //WebAssemblyHttpRequestMessageExtensions.SetBrowserRequestMode(httpRequestMessage, BrowserRequestMode.NoCors);
-        //var postResult = await Client.SendAsync(httpRequestMessage);
-        //if (postResult.IsSuccessStatusCode)
+        //var result = await Client.SendAsync(httpRequestMessage);
+        //if (result.IsSuccessStatusCode)
         //{
-        //    accessTokenResult = postResult.ToString();
+        //    accessTokenResult = result.ToString();
         //    //var response = postResult.Content.ToString();
         //    //await LocalStorageService.SetItemAsync("authToken", response?.AccessToken);
         //    //var claims = JwtParser.ParseClaimsFromJwt(response?.AccessToken ?? "");
@@ -219,8 +192,48 @@
         //}
         //else
         //{
-        //    error = postResult.ToString();
+        //    error = result.ToString();
         //}
+
+        var redirectUri = $"{baseRedirect}/authentication/login-callback";
+        var data = new KeyValuePair<string, string>[]
+        {
+           new ("code", authToken),
+           new ("grant_type", "authorization_code"),
+           new ("client_id", Code.ClientId),
+           new ("code_verifier", codeVerifier),
+           new ("redirect_uri", redirectUri),
+        };
+        var httpRequestMessage = new HttpRequestMessage
+            {
+                RequestUri = new Uri("https://www.linkedin.com/oauth/v2/accessToken"),
+                Content = new FormUrlEncodedContent(data),
+                Method = HttpMethod.Post
+            };
+
+        //NO PREFLIGHT! if we don't do this we get CORS
+        WebAssemblyHttpRequestMessageExtensions.SetBrowserRequestMode(httpRequestMessage, BrowserRequestMode.NoCors);
+
+        //NOT EVEN interop is working, here seems that is not the server's fault, beacuse it's the browser that is enforsing CORS: https://blog.devgenius.io/why-is-my-fetch-request-to-oauth-server-being-blocked-by-cors-c8bdadb92b30
+        var interopResult = await JS.InvokeAsync<TokenResponse?>("JSInteropWithTypeScript.fetchTokenAsync", baseRedirect, authToken, Code.ClientId, codeVerifier, redirectUri, authorization, true);
+        //var postResult = await Client.SendAsync(httpRequestMessage);
+        if (interopResult != null)
+        {
+            accessTokenResult = interopResult.AccessToken ?? "correct response but no token";
+            //var response = postResult.Content.ToString();
+            //await LocalStorageService.SetItemAsync("authToken", response?.AccessToken);
+            //var claims = JwtParser.ParseClaimsFromJwt(response?.AccessToken ?? "");
+            //AuthProvider.NotifyUserAuthentication((claims.FirstOrDefault(x => x.Type.Equals("email"))?.Value ?? ""));
+            //Navigation.NavigateTo("/");
+        }
+        else
+        {
+            error = "null response, read the console log";
+        }
+
+        RedirectUri = redirectUri;
+        CodeVerifier = codeVerifier;
+        AuthToken = authToken;
     }
 
     private async Task RedirectToAuthLoginAsync()
@@ -244,5 +257,23 @@
         await LocalStorageService.SetItemAsync("code_verifier", Code.CodeVerifier);
 
         Navigation.NavigateTo(Navigation.GetUriWithQueryParameters("https://www.linkedin.com/oauth/v2/authorization", parameters), true);
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (!string.IsNullOrWhiteSpace(RedirectUri)
+            && !string.IsNullOrWhiteSpace(CodeVerifier)
+            && !string.IsNullOrWhiteSpace(AuthToken))
+            {
+            }
+            else
+            {
+                error = "Please send help there is no more hope";
+            }
+
+            base.OnAfterRender(firstRender);
+        }
     }
 }

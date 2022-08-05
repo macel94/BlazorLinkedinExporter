@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "noImplicitAny": true,
+    "noEmitOnError": true,
+    "removeComments": false,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "sourceMap": true,
+    "target": "es5",
+    "module": "esnext"
+  },
+  "exclude": [
+    "node_modules",
+    "wwwroot"
+  ]
+}
