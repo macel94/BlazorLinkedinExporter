@@ -4,11 +4,14 @@ using MACEL94.github.io;
 using Microsoft.Fast.Components.FluentUI;
 using MACEL94.github.io.Services;
 using Blazored.LocalStorage;
+using MACEL94.github.io.Configuration;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
+var options = builder.Configuration.GetSection(LinkedinConfigurationOptions.ConfigurationKey);
+builder.Services.Configure<LinkedinConfigurationOptions>(options);
 builder.Services.AddAuthorizationCore();
 builder.Services.AddBlazoredLocalStorage();
 
