@@ -4,7 +4,6 @@
     {
         public const string ConfigurationKey = "Linkedin";
 
-        //Old properties
         public string AccessTokenUri { get; set; } = "";
     }
 }
