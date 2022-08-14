@@ -20,16 +20,22 @@ public class AuthStateProvider : AuthenticationStateProvider
 
     public async override Task<AuthenticationState> GetAuthenticationStateAsync()
     {
-        var token = await _localStorage.GetItemAsync<string>("authToken");
-        if (string.IsNullOrWhiteSpace(token))
+        var token = await _localStorage.GetItemAsync<PersistentAccessToken?>(TokenConstants.AccessToken);
+        if (token == null)
             return _anonymous;
-        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", token);
-        return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity(JwtParser.ParseClaimsFromJwt(token), "jwtAuthType")));
+        if (string.IsNullOrWhiteSpace(token.AccessToken) || token.ValidUntil == null || token.ValidUntil < DateTimeOffset.UtcNow || string.IsNullOrEmpty(token.Email))
+        {
+            //Invalid tokens need to be removed
+            await _localStorage.RemoveItemAsync(TokenConstants.AccessToken);
+            return _anonymous;
+        }
+        _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", token.AccessToken);
+        return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Email, token.Email) }, "jwtAuthType")));
     }
 
-    public void NotifyUserAuthentication(string name)
+    public void NotifyUserAuthentication(string email)
     {
-        var authenticatedUser = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Name, name) }, "jwtAuthType"));
+        var authenticatedUser = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Email, email) }, "jwtAuthType"));
         var authState = Task.FromResult(new AuthenticationState(authenticatedUser));
         NotifyAuthenticationStateChanged(authState);
     }
