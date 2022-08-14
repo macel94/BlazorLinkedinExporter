@@ -23,5 +23,5 @@ jobs:
       - name: Commit wwwroot to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: /src/Web/release/wwwroot
+          folder: ./src/Web/release/wwwroot
           branch: gh-pages
