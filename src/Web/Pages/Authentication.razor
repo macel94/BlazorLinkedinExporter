@@ -153,14 +153,6 @@
         );
         var authorization = "Basic " + encodedBasicAuth;
         Client.DefaultRequestHeaders.Add("Authorization", authorization);
-        Client.DefaultRequestHeaders.Host = "www.linkedin.com";
-        Client.DefaultRequestHeaders.AcceptEncoding.Clear();
-        Client.DefaultRequestHeaders.AcceptEncoding.ParseAdd("gzip");
-        Client.DefaultRequestHeaders.AcceptEncoding.ParseAdd("deflate");
-        Client.DefaultRequestHeaders.AcceptEncoding.ParseAdd("br");
-        Client.DefaultRequestHeaders.Accept.Clear();
-        Client.DefaultRequestHeaders.Accept.ParseAdd("*/*");
-
         var codeVerifier = await LocalStorageService.GetItemAsync<string>("code_verifier");
         var uri = new Uri(Navigation.Uri);
         var baseRedirect = $"{uri.Scheme}://{uri.Authority}";
@@ -173,7 +165,7 @@
                                 {"code_verifier", codeVerifier},
                                 {"redirect_uri", $"{baseRedirect}/authentication/login-callback"},
                             };
-        var getTestValue = Navigation.GetUriWithQueryParameters("https://www.linkedin.com/oauth/v2/accessToken", parameters);
+        var getTestValue = Navigation.GetUriWithQueryParameters(LinkedinConfig.Value.AccessTokenUri, parameters);
 
         //var httpRequestMessage = new HttpRequestMessage
         //    {
@@ -214,16 +206,15 @@
                 Method = HttpMethod.Post
             };
 
-        //NO PREFLIGHT! if we don't do this we get CORS
-        WebAssemblyHttpRequestMessageExtensions.SetBrowserRequestMode(httpRequestMessage, BrowserRequestMode.NoCors);
-
         //NOT EVEN interop is working, here seems that is not the server's fault, beacuse it's the browser that is enforsing CORS: https://blog.devgenius.io/why-is-my-fetch-request-to-oauth-server-being-blocked-by-cors-c8bdadb92b30
         //var interopResult = await JS.InvokeAsync<TokenResponse?>("JSInteropWithTypeScript.fetchTokenAsync", baseRedirect, authToken, Code.ClientId, codeVerifier, redirectUri, authorization, true);
         var postResult = await Client.SendAsync(httpRequestMessage);
+        //var postResult = await Client.GetFromJsonAsync<TokenResponse?>(getTestValue);
         var result = await postResult.Content.ReadAsStringAsync();
         if (result != null)
         {
-            accessTokenResult = result ?? "correct response but no token";
+            accessTokenResult = string.IsNullOrEmpty(result) ? "correct response but no token" : result;
+            //accessTokenResult = postResult.AccessToken ?? "correct response but no token";
             //var response = postResult.Content.ToString();
             //await LocalStorageService.SetItemAsync("authToken", response?.AccessToken);
             //var claims = JwtParser.ParseClaimsFromJwt(response?.AccessToken ?? "");
@@ -261,23 +252,5 @@
         await LocalStorageService.SetItemAsync("code_verifier", Code.CodeVerifier);
 
         Navigation.NavigateTo(Navigation.GetUriWithQueryParameters("https://www.linkedin.com/oauth/v2/authorization", parameters), true);
-    }
-
-    protected override void OnAfterRender(bool firstRender)
-    {
-        if (firstRender)
-        {
-            if (!string.IsNullOrWhiteSpace(RedirectUri)
-            && !string.IsNullOrWhiteSpace(CodeVerifier)
-            && !string.IsNullOrWhiteSpace(AuthToken))
-            {
-            }
-            else
-            {
-                error = "Please send help there is no more hope";
-            }
-
-            base.OnAfterRender(firstRender);
-        }
     }
 }
