@@ -6,6 +6,11 @@ updates:
     directory: "/src/Web"
     schedule:
       interval: "daily"
+      
+  - package-ecosystem: "nuget"
+    directory: "/src/Backend/LinkedinProxy"
+    schedule:
+      interval: "daily"
 
   - package-ecosystem: "github-actions"
     directory: "/.github/workflows"
