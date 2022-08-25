@@ -27,7 +27,7 @@
     Error
 </h1>
 <p>
-    @error
+    @internalError
 </p>
 
 <h1>
@@ -51,7 +51,7 @@
     [Parameter]
     [SupplyParameterFromQuery(Name = "state")]
     public string? State { get; set; }
-    private string error = "";
+    private string internalError = "";
     private PersistentAccessToken persistentAccessToken = new PersistentAccessToken();
 
     //For the accessToken get by form part
@@ -68,7 +68,7 @@
         }
         catch (Exception ex)
         {
-            error = ex.ToString();
+            internalError = ex.ToString();
         }
     }
 
@@ -76,13 +76,13 @@
     {
         if (Action == null)
         {
-            error = new ArgumentNullException(nameof(Action)).ToString();
+            internalError = new ArgumentNullException(nameof(Action)).ToString();
             return;
         }
 
         if (LocalStorageService == null)
         {
-            error = new ArgumentNullException(nameof(LocalStorageService)).ToString();
+            internalError = new ArgumentNullException(nameof(LocalStorageService)).ToString();
             return;
         }
 
@@ -101,10 +101,10 @@
         }
 
         //TODO: MANAGE https://docs.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow?view=li-lms-2022-07&tabs=HTTPS#failed-requests
-        //error - A code indicating one of these errors:
+        //internalError - A code indicating one of these errors:
         //user_cancelled_login - The member declined to log in to their LinkedIn account.
         //user_cancelled_authorize - The member refused to authorize the permissions request from your application.
-        //error_description - A URL-encoded textual description that summarizes the error.
+        //error_description - A URL-encoded textual description that summarizes the internalError.
 
 
         if (Action.Equals("login-callback"))
@@ -114,7 +114,7 @@
                 AuthToken = await LocalStorageService.GetItemAsync<string>(TokenConstants.IdToken);
                 if (AuthToken == null)
                 {
-                    error = new ArgumentNullException(nameof(AuthToken)).ToString();
+                    internalError = new ArgumentNullException(nameof(AuthToken)).ToString();
                     return;
                 }
             }
@@ -182,17 +182,16 @@
                 persistentAccessToken.Email = email;
                 await LocalStorageService.SetItemAsync(TokenConstants.AccessToken, persistentAccessToken);
                 AuthProvider.NotifyUserAuthentication(email);
+                Navigation.NavigateTo("/");
             }
             else
             {
-                error = "error while getting email, read the console log";
+                internalError = "internalError while getting email, read the console log";
             }
-
-            Navigation.NavigateTo("/");
         }
         else
         {
-            error = "null response, read the console log";
+            internalError = "null response, read the console log";
         }
     }
 

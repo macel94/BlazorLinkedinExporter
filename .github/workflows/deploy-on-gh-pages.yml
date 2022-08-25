@@ -18,10 +18,10 @@ jobs:
 
       - name: Publish .NET Project
 
-        run: dotnet publish ./src/Web/MACEL94.github.io.csproj -c Release -o ./src/Web/release
+        run: dotnet publish ./src/Web/MACEL94.github.io/MACEL94.github.io.csproj -c Release -o ./src/Web/MACEL94.github.io/release
 
       - name: Commit wwwroot to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: ./src/Web/release/wwwroot
+          folder: ./src/Web/MACEL94.github.io/release/wwwroot
           branch: gh-pages
