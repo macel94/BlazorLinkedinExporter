@@ -87,7 +87,7 @@ namespace LinkedinProxy
             var client = _httpClientFactory.CreateClient();
             client.DefaultRequestHeaders.Authorization = parsedAuthHeader;
 
-            var res = await client.GetFromJsonAsync<GetEmailResponse?>(new Uri("https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))"));
+            var res = await client.GetFromJsonAsync<GetEmailResponse?>("https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))");
             var response = req.CreateResponse(HttpStatusCode.OK);
             await response.WriteAsJsonAsync(res);
             return response;

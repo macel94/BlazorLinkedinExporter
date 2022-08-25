@@ -148,7 +148,7 @@
            new ("code", authToken),
            new ("grant_type", "authorization_code"),
            new ("client_id", Code.ClientId),
-           new ("code_verifier", codeVerifier),
+           //new ("code_verifier", codeVerifier),
            new ("redirect_uri", redirectUri),
         };
 
@@ -181,8 +181,12 @@
                 var email = await GetEmailAsync(persistentAccessToken.AccessToken);
                 persistentAccessToken.Email = email;
                 await LocalStorageService.SetItemAsync(TokenConstants.AccessToken, persistentAccessToken);
+
+                //var profile = await GetProfileAsync(persistentAccessToken.AccessToken);
+
                 AuthProvider.NotifyUserAuthentication(email);
-                Navigation.NavigateTo("/");
+                //I force the load to notify that the state changed to every component
+                Navigation.NavigateTo("/", true);
             }
             else
             {
@@ -195,9 +199,16 @@
         }
     }
 
+    //private async Task<string> GetProfileAsync(string accessToken)
+    //{
+    //    Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+    //    var result = await Client.GetFromJsonAsync<GetEmailResponse>(LinkedinConfig.Value.EmailUri);
+    //    return result?.Elements?.FirstOrDefault()?.EmailHandle?.Email ?? "";
+    //}
+
     private async Task<string> GetEmailAsync(string accessToken)
     {
-        Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", accessToken);
+        Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
         var result = await Client.GetFromJsonAsync<GetEmailResponse>(LinkedinConfig.Value.EmailUri);
         return result?.Elements?.FirstOrDefault()?.EmailHandle?.Email ?? "";
     }
@@ -213,8 +224,8 @@
                                 {"client_id", Code.ClientId},
                                 {"response_type", "code"},
                                 {"redirect_uri", $"{baseRedirect}/authentication/login-callback"},
-                                {"code_challenge_method", "S256"},
-                                {"code_challenge", Code.CodeChallenge},
+                                //{"code_challenge_method", "S256"},
+                                //{"code_challenge", Code.CodeChallenge},
                                 {"scope", "r_liteprofile,r_emailaddress"},
                                 {"state", Code.State}
                             };
