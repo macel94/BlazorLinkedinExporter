@@ -185,8 +185,13 @@
                 await LocalStorageService.SetItemAsync(TokenConstants.AccessToken, persistentAccessToken);
 
                 var profile = await GetProfileAsync(persistentAccessToken.AccessToken);
+                var firstName = profile.FirstName?.Localized?.FirstOrDefault().Value ?? "";
+                var lastName = profile.LastName?.Localized?.FirstOrDefault().Value ?? "";
+                persistentAccessToken.FirstName = firstName;
+                persistentAccessToken.LastName = lastName;
+                await LocalStorageService.SetItemAsync(TokenConstants.AccessToken, persistentAccessToken);
 
-                AuthProvider.NotifyUserAuthentication(email, profile.FirstName?.Localized?.FirstOrDefault(), profile.LastName?.Localized?.FirstOrDefault());
+                AuthProvider.NotifyUserAuthentication(email, firstName, lastName);
                 //I force the load to notify that the state changed to every component
                 Navigation.NavigateTo("/", true);
             }

@@ -1,9 +1,9 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using Google.Protobuf.WellKnownTypes;
 using LinkedinProxy.Dto.Authentication.AccessToken;
 using LinkedinProxy.Dto.Authentication.Email;
+using LinkedinProxy.Dto.Authentication.Profile;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Configuration;
@@ -25,7 +25,7 @@ namespace LinkedinProxy
             _configuration = configuration;
         }
 
-        [Function($"accessToken")]
+        [Function("accessToken")]
         public async Task<HttpResponseData> GetAccessTokenAsync([HttpTrigger(AuthorizationLevel.Anonymous, Http.Post)] HttpRequestData req)
         {
             FormUrlEncodedContent content = await GetRequestContentAsync(req);
@@ -78,7 +78,7 @@ namespace LinkedinProxy
             return content;
         }
 
-        [Function($"emailAddress")]
+        [Function("emailAddress")]
         public async Task<HttpResponseData> GetEmailAsync([HttpTrigger(AuthorizationLevel.Anonymous, Http.Get)] HttpRequestData req)
         {
             var authHeaderValues = req.Headers.FirstOrDefault(x => x.Key.Equals("Authorization")).Value ?? new List<string>();
@@ -89,6 +89,22 @@ namespace LinkedinProxy
             client.DefaultRequestHeaders.Authorization = parsedAuthHeader;
 
             var res = await client.GetFromJsonAsync<GetEmailResponse?>("https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))");
+            var response = req.CreateResponse(HttpStatusCode.OK);
+            await response.WriteAsJsonAsync(res);
+            return response;
+        }
+
+        [Function("profile")]
+        public async Task<HttpResponseData> GetLightProfileAsync([HttpTrigger(AuthorizationLevel.Anonymous, Http.Get)] HttpRequestData req)
+        {
+            var authHeaderValues = req.Headers.FirstOrDefault(x => x.Key.Equals("Authorization")).Value ?? new List<string>();
+            var authHeaderValue = string.Join(" ", authHeaderValues);
+            var authenticationHeaderValue = AuthenticationHeaderValue.TryParse(authHeaderValue, out var parsedAuthHeader);
+
+            var client = _httpClientFactory.CreateClient();
+            client.DefaultRequestHeaders.Authorization = parsedAuthHeader;
+
+            var res = await client.GetFromJsonAsync<GetProfileResponse?>("https://api.linkedin.com/v2/me?projection=(id,firstName,lastName,profilePicture(displayImage~:playableStreams))");
             var response = req.CreateResponse(HttpStatusCode.OK);
             await response.WriteAsJsonAsync(res);
             return response;

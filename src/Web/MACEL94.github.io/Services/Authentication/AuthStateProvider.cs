@@ -23,19 +23,37 @@ public class AuthStateProvider : AuthenticationStateProvider
         var token = await _localStorage.GetItemAsync<PersistentAccessToken?>(TokenConstants.AccessToken);
         if (token == null)
             return _anonymous;
-        if (string.IsNullOrWhiteSpace(token.AccessToken) || token.ValidUntil == null || token.ValidUntil < DateTimeOffset.UtcNow || string.IsNullOrEmpty(token.Email))
+        if (string.IsNullOrWhiteSpace(token.AccessToken) || token.ValidUntil == null || token.ValidUntil < DateTimeOffset.UtcNow)
         {
-            //Invalid tokens need to be removed
             await _localStorage.RemoveItemAsync(TokenConstants.AccessToken);
             return _anonymous;
         }
+        //TODO Request here email and username if not already in the persisted data
+
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", token.AccessToken);
-        return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Email, token.Email) }, "jwtAuthType")));
+
+        var claims = new List<Claim>();
+
+        if(token.Email is not null)
+        {
+            claims.Add(new Claim(ClaimTypes.Email, token.Email));
+        }
+
+        if (token.FirstName is not null)
+        {
+            claims.Add(new Claim(ClaimTypes.Name, token.FirstName));
+        }
+
+        if (token.LastName is not null)
+        {
+            claims.Add(new Claim(ClaimTypes.Surname, token.LastName));
+        }
+
+        return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity(claims, "jwtAuthType")));
     }
 
     public void NotifyUserAuthentication(string email, string firstName, string lastName)
     {
-        //TODO REFACTOR, TAKE EVERYTHING ONLY FROM ACCESS TOKEN
         var authenticatedUser = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Email, email), new Claim(ClaimTypes.Name, firstName), new Claim(ClaimTypes.Surname, lastName) }, "jwtAuthType"));
         var authState = Task.FromResult(new AuthenticationState(authenticatedUser));
         NotifyAuthenticationStateChanged(authState);
