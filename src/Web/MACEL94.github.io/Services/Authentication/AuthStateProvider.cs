@@ -33,9 +33,10 @@ public class AuthStateProvider : AuthenticationStateProvider
         return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Email, token.Email) }, "jwtAuthType")));
     }
 
-    public void NotifyUserAuthentication(string email)
+    public void NotifyUserAuthentication(string email, string firstName, string lastName)
     {
-        var authenticatedUser = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Email, email) }, "jwtAuthType"));
+        //TODO REFACTOR, TAKE EVERYTHING ONLY FROM ACCESS TOKEN
+        var authenticatedUser = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Email, email), new Claim(ClaimTypes.Name, firstName), new Claim(ClaimTypes.Surname, lastName) }, "jwtAuthType"));
         var authState = Task.FromResult(new AuthenticationState(authenticatedUser));
         NotifyAuthenticationStateChanged(authState);
     }
