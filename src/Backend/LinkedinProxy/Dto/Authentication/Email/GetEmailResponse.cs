@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace LinkedinProxy.Dto.Authentication
+namespace LinkedinProxy.Dto.Authentication.Email
 {
     public class GetEmailResponse
     {

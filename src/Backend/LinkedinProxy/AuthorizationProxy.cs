@@ -2,7 +2,8 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Google.Protobuf.WellKnownTypes;
-using LinkedinProxy.Dto.Authentication;
+using LinkedinProxy.Dto.Authentication.AccessToken;
+using LinkedinProxy.Dto.Authentication.Email;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Configuration;
@@ -42,7 +43,7 @@ namespace LinkedinProxy
 
             if (postResult.IsSuccessStatusCode)
             {
-                var result = await postResult.Content.ReadFromJsonAsync<TokenResponse?>();
+                var result = await postResult.Content.ReadFromJsonAsync<AccessTokenResponse?>();
                 await response.WriteAsJsonAsync(result);
             }
             else

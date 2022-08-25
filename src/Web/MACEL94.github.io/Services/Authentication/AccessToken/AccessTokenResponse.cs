@@ -1,8 +1,8 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace LinkedinProxy.Dto.Authentication
+namespace MACEL94.github.io.Services.Authentication.AccessToken
 {
-    public class TokenResponse
+    public class AccessTokenResponse
     {
         [JsonPropertyName("access_token")]
         public string? AccessToken { get; set; }

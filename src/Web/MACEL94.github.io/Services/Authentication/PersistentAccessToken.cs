@@ -1,4 +1,6 @@
-﻿namespace MACEL94.github.io.Services.Authentication
+﻿using MACEL94.github.io.Services.Authentication.AccessToken;
+
+namespace MACEL94.github.io.Services.Authentication
 {
     public class PersistentAccessToken
     {

@@ -1,11 +1,12 @@
 @page "/authentication/{*pageRoute}"
 @page "/authentication/{action?}"
-
 @using Blazored.LocalStorage
 @using MACEL94.github.io.Configuration
 @using MACEL94.github.io.Services.Authentication
 @using System.Net.Http.Headers
 @using System.Text
+@using MACEL94.github.io.Services.Authentication.AccessToken
+@using MACEL94.github.io.Services.Authentication.Email
 @using Microsoft.Extensions.Options
 @inject AuthStateProvider AuthProvider
 @inject NavigationManager Navigation

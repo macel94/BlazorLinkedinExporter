@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace MACEL94.github.io.Services.Authentication
+namespace LinkedinProxy.Dto.Authentication.Email
 {
     public class Element
     {
@@ -9,4 +9,5 @@ namespace MACEL94.github.io.Services.Authentication
         [JsonPropertyName("handle")]
         public string? HandleUrn { get; set; }
     }
+
 }
