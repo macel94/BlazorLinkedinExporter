@@ -69,20 +69,20 @@ resource azFunctionSlotStaging 'Microsoft.Web/sites/slots@2022-03-01' = {
   }
 }
 
-// resource azAppConfiguration 'Microsoft.Web/sites/config@2021-03-01' = {
-//   name: 'slotConfigNames'
-//   parent: azFunctionApp
-//   properties: {
-//     appSettingNames: [
-//       'APP_CONFIGURATION_LABEL'
-//     ]
-//   }
-// }
+resource azAppConfiguration 'Microsoft.Web/sites/config@2021-03-01' = {
+  name: 'slotConfigNames'
+  parent: azFunctionApp
+  properties: {
+    appSettingNames: [
+      'APP_CONFIGURATION_LABEL'
+    ]
+  }
+}
 
 module appService_appSettings 'appservice-appsettings-config.bicep' = {
   name: '${deploymentNameId}-appservice-config'
   params: {
-    // appConfigurationName: azAppConfiguration.name
+    appConfigurationName: azAppConfiguration.name
     appConfiguration_appConfigLabel_value_production: 'production'
     appConfiguration_appConfigLabel_value_staging: 'staging'
     applicationInsightsInstrumentationKey: azAppInsightsInstrumentationKey
@@ -93,7 +93,7 @@ module appService_appSettings 'appservice-appsettings-config.bicep' = {
   }
 }
 
-// output appConfigName string = azAppConfiguration.name
+output appConfigName string = azAppConfiguration.name
 output appInsightsInstrumentionKey string = azAppInsightsInstrumentationKey
 output functionAppName string = azFunctionApp.name
 output functionAppSlotName string = functionAppStagingSlot

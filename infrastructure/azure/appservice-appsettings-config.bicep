@@ -1,7 +1,7 @@
 param applicationInsightsInstrumentationKey string
 param storageAccountName string
 param storageAccountAccessKey string
-// param appConfigurationName string
+param appConfigurationName string
 param functionAppName string
 param functionAppStagingSlotName string
 
@@ -11,7 +11,7 @@ param appConfiguration_appConfigLabel_value_production string = 'production'
 param appConfiguration_appConfigLabel_value_staging string = 'staging'
 
 var BASE_SLOT_APPSETTINGS = {
-  // APP_CONFIGURATION_NAME: appConfigurationName
+  APP_CONFIGURATION_NAME: appConfigurationName
   APPINSIGHTS_INSTRUMENTATIONKEY: applicationInsightsInstrumentationKey
   APPLICATIONINSIGHTS_CONNECTION_STRING: 'InstrumentationKey=${applicationInsightsInstrumentationKey}'
   AzureWebJobsStorage: 'DefaultEndpointsProtocol=https;AccountName=${storageAccountName};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccountAccessKey}'
