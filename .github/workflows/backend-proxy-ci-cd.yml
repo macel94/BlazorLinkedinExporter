@@ -19,6 +19,8 @@ on:
       - src/Backend/LinkedinProxy/**
       - .github/workflows/backend-proxy-ci-cd.yml
 
+  workflow_dispatch:
+
 jobs:
   deploy-backend-iac:
     runs-on: ubuntu-latest
