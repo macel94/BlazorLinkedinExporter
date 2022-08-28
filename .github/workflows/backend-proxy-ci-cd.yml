@@ -30,4 +30,4 @@ jobs:
           DEPLOYMENT_NAME: ${{ env.DEPLOYMENT_NAME }}
           DEPLOYMENT_NAME_ID: ${{ github.run_id }}
           RESOURCE_GROUP: "macel94.github.io"
-          RESOURCE_NAME_PREFIX: "macel94-github"
+          RESOURCE_NAME_PREFIX: "macel94github"
