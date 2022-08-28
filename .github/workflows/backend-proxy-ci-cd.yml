@@ -18,6 +18,7 @@ on:
     paths:
       - src/Backend/LinkedinProxy/**
       - .github/workflows/backend-proxy-ci-cd.yml
+      - infrastructure/azure/**
 
   workflow_dispatch:
 
