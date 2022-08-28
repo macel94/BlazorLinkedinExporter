@@ -25,7 +25,8 @@ jobs:
 
       - name: 🏗 Deploy infrastructure
         run: |
-          az deployment group create --name $DEPLOYMENT_NAME --resource-group $RESOURCE_GROUP --template-file ./infrastructure/azure/main.bicep --parameters deploymentNameId=$DEPLOYMENT_NAME_ID resourceNamePrefix=$RESOURCE_NAME_PREFIX
+          az deployment group create --name $DEPLOYMENT_NAME --resource-group $RESOURCE_GROUP --template-file ./infrastructure/azure/main.bicep --parameters deploymentNameId=$DEPLOYMENT_NAME_ID resourceNamePrefix=$RESOURCE_NAME_PREFIX --verbose
+
         env:
           DEPLOYMENT_NAME: ${{ env.DEPLOYMENT_NAME }}
           DEPLOYMENT_NAME_ID: ${{ github.run_id }}
