@@ -1,3 +1,6 @@
+env:
+  DEPLOYMENT_NAME: GH_CICD_${{ github.run_id }}
+
 name: Deploy Backend API to Az Function
 
 # Run workflow on every push to the master branch
