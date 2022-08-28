@@ -5,9 +5,9 @@ env:
 
 name: Deploy Backend API to Az Function
 
-permissions:
-  id-token: write
-  contents: read
+# permissions:
+#   id-token: write
+#   contents: read
 
 # Run workflow on every push to the master branch
 on:
@@ -31,6 +31,8 @@ jobs:
 
       - name: 🏗 Deploy infrastructure
         run: |
+          pwd
+          ls
           az deployment group create --name $DEPLOYMENT_NAME --resource-group $RESOURCE_GROUP --template-file ./infrastructure/azure/main.bicep --parameters deploymentNameId=$DEPLOYMENT_NAME_ID resourceNamePrefix=$RESOURCE_NAME_PREFIX --debug
 
         env:
