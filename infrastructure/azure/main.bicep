@@ -36,7 +36,9 @@ resource azHostingPlan 'Microsoft.Web/serverfarms@2022-03-01' = {
   name: '${envResourceNamePrefix}-asp'
   location: location
   kind: 'linux'
-  properties: {}
+  properties: {
+    reserved: true
+  }
   sku: {
     name: 'B1'
   }
@@ -51,6 +53,7 @@ resource azFunctionApp 'Microsoft.Web/sites@2021-03-01' = {
   }
   properties: {
     httpsOnly: true
+    reserved: true
     serverFarmId: azHostingPlan.id
     siteConfig: {
       linuxFxVersion: 'dotnet|6.0'
