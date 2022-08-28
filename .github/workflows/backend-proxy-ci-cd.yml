@@ -11,6 +11,7 @@ on:
 
     paths:
       - src/Backend/LinkedinProxy/**
+      - .github/workflows/backend-proxy-ci-cd.yml
 
 jobs:
   deploy-backend-iac:
