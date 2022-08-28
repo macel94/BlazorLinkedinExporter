@@ -1,7 +1,13 @@
 env:
   DEPLOYMENT_NAME: GH_CICD_${{ github.run_id }}
+  RESOURCE_GROUP: macel94.github.io
+  RESOURCE_NAME_PREFIX: macel94github
 
 name: Deploy Backend API to Az Function
+
+permissions:
+  id-token: write
+  contents: read
 
 # Run workflow on every push to the master branch
 on:
@@ -30,5 +36,3 @@ jobs:
         env:
           DEPLOYMENT_NAME: ${{ env.DEPLOYMENT_NAME }}
           DEPLOYMENT_NAME_ID: ${{ github.run_id }}
-          RESOURCE_GROUP: "macel94.github.io"
-          RESOURCE_NAME_PREFIX: "macel94github"
