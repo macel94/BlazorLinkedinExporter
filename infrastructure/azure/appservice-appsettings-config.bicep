@@ -3,7 +3,7 @@ param storageAccountName string
 param storageAccountAccessKey string
 param appConfigurationName string
 param functionAppName string
-param functionAppStagingSlotName string
+// param functionAppStagingSlotName string
 
 @description('Value of "APP_CONFIGURATION_LABEL" appsetting for production slot')
 param appConfiguration_appConfigLabel_value_production string = 'production'
@@ -31,11 +31,11 @@ resource functionAppSettings 'Microsoft.Web/sites/config@2021-03-01' = {
 }
 
 /* update staging slot with unique settings */
-var STG_SLOT_APPSETTINGS = {
-  APP_CONFIGURATION_LABEL: appConfiguration_appConfigLabel_value_staging
-}
-@description('Set app settings on production slot')
-resource stagingFunctionAppSettings 'Microsoft.Web/sites/config@2021-03-01' = {
-  name: '${functionAppStagingSlotName}/appsettings'
-  properties: union(BASE_SLOT_APPSETTINGS, STG_SLOT_APPSETTINGS)
-}
+// var STG_SLOT_APPSETTINGS = {
+//   APP_CONFIGURATION_LABEL: appConfiguration_appConfigLabel_value_staging
+// }
+// @description('Set app settings on production slot')
+// resource stagingFunctionAppSettings 'Microsoft.Web/sites/config@2021-03-01' = {
+//   name: '${functionAppStagingSlotName}/appsettings'
+//   properties: union(BASE_SLOT_APPSETTINGS, STG_SLOT_APPSETTINGS)
+// }

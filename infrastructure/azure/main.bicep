@@ -61,17 +61,17 @@ resource azFunctionApp 'Microsoft.Web/sites@2021-03-01' = {
   }
 }
 
-resource azFunctionSlotStaging 'Microsoft.Web/sites/slots@2022-03-01' = {
-  name: '${azFunctionApp.name}/${functionAppStagingSlot}'
-  location: location
-  identity: {
-    type: 'SystemAssigned'
-  }
-  properties: {
-    enabled: true
-    httpsOnly: true
-  }
-}
+// resource azFunctionSlotStaging 'Microsoft.Web/sites/slots@2022-03-01' = {
+//   name: '${azFunctionApp.name}/${functionAppStagingSlot}'
+//   location: location
+//   identity: {
+//     type: 'SystemAssigned'
+//   }
+//   properties: {
+//     enabled: true
+//     httpsOnly: true
+//   }
+// }
 
 resource azAppConfiguration 'Microsoft.Web/sites/config@2021-03-01' = {
   name: 'slotConfigNames'
@@ -93,7 +93,7 @@ module appService_appSettings 'appservice-appsettings-config.bicep' = {
     storageAccountName: azStorageAccount.name
     storageAccountAccessKey: azStorageAccountPrimaryAccessKey
     functionAppName: azFunctionApp.name
-    functionAppStagingSlotName: azFunctionSlotStaging.name
+    // functionAppStagingSlotName: azFunctionSlotStaging.name
   }
 }
 
