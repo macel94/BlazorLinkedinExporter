@@ -53,7 +53,7 @@ resource azFunctionApp 'Microsoft.Web/sites@2021-03-01' = {
     httpsOnly: true
     serverFarmId: azHostingPlan.id
     siteConfig: {
-      linuxFxVersion: 'DOTNETCORE|6.0'
+      linuxFxVersion: 'dotnet|6.0'
     }
   }
 }
