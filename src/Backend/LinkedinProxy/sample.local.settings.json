@@ -2,7 +2,8 @@
   "IsEncrypted": false,
   "Values": {
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
-    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated"
+    "FUNCTIONS_WORKER_RUNTIME": "dotnet-isolated",
+    "LinkedinClientSecret": "your_secret_here"
   },
   "Host": {
     "CORS": "https://localhost:7063,http://localhost:5086,https://macel94.github.io"

@@ -1,0 +1,29 @@
+name: Deploy Backend API to Az Function
+
+# Run workflow on every push to the master branch
+on:
+  push:
+    branches:
+      - master
+
+    paths:
+      - src/Backend/LinkedinProxy/**
+
+jobs:
+  deploy-backend-iac:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: 🏗 Deploy infrastructure
+        run: |
+          az deployment group create --name $DEPLOYMENT_NAME --resource-group $RESOURCE_GROUP --template-file ./infrastructure/azure/main.bicep --parameters deploymentNameId=$DEPLOYMENT_NAME_ID resourceNamePrefix=$RESOURCE_NAME_PREFIX
+        env:
+          DEPLOYMENT_NAME: ${{ env.DEPLOYMENT_NAME }}
+          DEPLOYMENT_NAME_ID: ${{ github.run_id }}
+          RESOURCE_GROUP: "macel94.github.io"
+          RESOURCE_NAME_PREFIX: "backend"
