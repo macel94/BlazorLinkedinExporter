@@ -36,3 +36,5 @@ jobs:
         env:
           DEPLOYMENT_NAME: ${{ env.DEPLOYMENT_NAME }}
           DEPLOYMENT_NAME_ID: ${{ github.run_id }}
+          RESOURCE_GROUP: ${{ env.RESOURCE_GROUP }}
+          RESOURCE_NAME_PREFIX: ${{ env.RESOURCE_NAME_PREFIX }}
