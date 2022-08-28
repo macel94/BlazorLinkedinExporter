@@ -56,7 +56,7 @@ resource azFunctionApp 'Microsoft.Web/sites@2021-03-01' = {
     reserved: true
     serverFarmId: azHostingPlan.id
     siteConfig: {
-      linuxFxVersion: 'dotnet|6.0'
+      linuxFxVersion: 'DOTNETCORE|6.0'
     }
   }
 }
