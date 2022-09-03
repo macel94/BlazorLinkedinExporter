@@ -8,6 +8,7 @@ on:
 
     paths:
       - src/Web/MACEL94.github.io/**
+  workflow_dispatch:
 
 permissions:
   contents: write
