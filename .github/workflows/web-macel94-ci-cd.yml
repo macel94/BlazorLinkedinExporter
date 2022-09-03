@@ -23,7 +23,7 @@ jobs:
       - name: Publish .NET Project
         run: dotnet publish ./src/Web/MACEL94.github.io/MACEL94.github.io.csproj -c Release -o ./src/Web/MACEL94.github.io/release
 
-      - name: Change base-tag in index.html from / to BlazorGitHubPagesDemo
+      - name: Change base-tag in index.html from / to BlazorLinkedinExporter
         run: sed -i 's/<base href="\/" \/>/<base href="\/BlazorLinkedinExporter\/" \/>/g' ./src/Web/MACEL94.github.io/release/wwwroot/index.html
 
       - name: Commit wwwroot to GitHub Pages
