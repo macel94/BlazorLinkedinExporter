@@ -7,6 +7,10 @@ var envResourceNamePrefix = toLower(resourceNamePrefix)
 @description('Deployment name (used as parent ID for child deployments)')
 param deploymentNameId string = '0000000000'
 
+@description('Linkedin ClientSecret to set in the appConfig')
+@secure()
+param linkedinClientSecret string = newGuid()
+
 @description('Name of the staging deployment slot')
 var functionAppStagingSlot = 'staging'
 
@@ -93,6 +97,7 @@ module appService_appSettings 'appservice-appsettings-config.bicep' = {
     storageAccountName: azStorageAccount.name
     storageAccountAccessKey: azStorageAccountPrimaryAccessKey
     functionAppName: azFunctionApp.name
+    linkedinClientSecret: linkedinClientSecret
     // functionAppStagingSlotName: azFunctionSlotStaging.name
   }
 }

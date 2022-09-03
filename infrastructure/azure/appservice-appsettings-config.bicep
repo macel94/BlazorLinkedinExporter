@@ -3,6 +3,9 @@ param storageAccountName string
 param storageAccountAccessKey string
 param appConfigurationName string
 param functionAppName string
+@secure()
+param linkedinClientSecret string
+
 // param functionAppStagingSlotName string
 
 @description('Value of "APP_CONFIGURATION_LABEL" appsetting for production slot')
@@ -18,6 +21,7 @@ var BASE_SLOT_APPSETTINGS = {
   FUNCTIONS_EXTENSION_VERSION: '~4'
   FUNCTIONS_WORKER_RUNTIME: 'dotnet-isolated'
   WEBSITE_CONTENTSHARE: toLower(storageAccountName)
+  LinkedinClientSecret: linkedinClientSecret
   WEBSITE_CONTENTAZUREFILECONNECTIONSTRING: 'DefaultEndpointsProtocol=https;AccountName=${storageAccountName};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccountAccessKey}'
 }
 
