@@ -88,7 +88,7 @@ module appService_appSettings 'appservice-appsettings-config.bicep' = {
   params: {
     appConfigurationName: azAppConfiguration.name
     appConfiguration_appConfigLabel_value_production: 'production'
-    appConfiguration_appConfigLabel_value_staging: 'staging'
+    // appConfiguration_appConfigLabel_value_staging: 'staging'
     applicationInsightsInstrumentationKey: azAppInsightsInstrumentationKey
     storageAccountName: azStorageAccount.name
     storageAccountAccessKey: azStorageAccountPrimaryAccessKey

@@ -7,8 +7,8 @@ param functionAppName string
 
 @description('Value of "APP_CONFIGURATION_LABEL" appsetting for production slot')
 param appConfiguration_appConfigLabel_value_production string = 'production'
-@description('Value of "APP_CONFIGURATION_LABEL" appsetting for staging slot')
-param appConfiguration_appConfigLabel_value_staging string = 'staging'
+// @description('Value of "APP_CONFIGURATION_LABEL" appsetting for staging slot')
+// param appConfiguration_appConfigLabel_value_staging string = 'staging'
 
 var BASE_SLOT_APPSETTINGS = {
   APP_CONFIGURATION_NAME: appConfigurationName
