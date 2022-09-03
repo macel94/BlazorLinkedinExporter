@@ -8,6 +8,7 @@ on:
 
     paths:
       - src/Web/MACEL94.github.io/**
+      - .github/workflows/web-macel94-ci-cd.yml
   workflow_dispatch:
 
 permissions:
