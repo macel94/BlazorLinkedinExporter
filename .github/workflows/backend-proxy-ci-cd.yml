@@ -2,8 +2,8 @@ env:
   DEPLOYMENT_NAME: GH_CICD_${{ github.run_id }}
   RESOURCE_GROUP: macel94.github.io
   RESOURCE_NAME_PREFIX: macel94github
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'src/Backend/LinkedinProxy' # set this to the path to your web app project, defaults to the repository root
-  OUTPUT_FOLDER: 'output'
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: "src/Backend/LinkedinProxy" # set this to the path to your web app project, defaults to the repository root
+  OUTPUT_FOLDER: "output"
 name: Deploy Backend API to Az Function
 
 # permissions:
@@ -28,22 +28,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       # TODO -VALIDATE BICEP
-      
-      - name: 'Publish Function'
+
+      - name: "Publish Function"
         shell: bash
         run: |
           pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
           dotnet publish --configuration Release --output './${{ env.OUTPUT_FOLDER }}'
           popd
-          
+
       - name: Package Functions
         uses: actions/upload-artifact@v3
         with:
           name: functions
-          path: './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/${{ env.OUTPUT_FOLDER }}'
-      
+          path: "./${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/${{ env.OUTPUT_FOLDER }}"
 
   deploy-backend-iac:
     runs-on: ubuntu-latest
@@ -63,10 +62,10 @@ jobs:
           template: ./infrastructure/azure/main.bicep
           deploymentName: ${{ env.DEPLOYMENT_NAME }}
           parameters: deploymentNameId="${{ github.run_id }}" resourceNamePrefix="${{ env.RESOURCE_NAME_PREFIX }}" linkedinClientSecret="${{ secrets.LINKEDIN_CLIENT_SECRET }}"
-  
+
     outputs:
       functionAppName: ${{ steps.deploy_infra.outputs.functionAppName }}
-  
+
   deploy-function:
     needs: [build, deploy-backend-iac]
     runs-on: ubuntu-latest

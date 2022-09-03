@@ -1,0 +1,247 @@
+@page "/authentication/{*pageRoute}"
+@page "/authentication/{action?}"
+@using Blazored.LocalStorage
+@using BlazorLinkedinExporter.Configuration
+@using BlazorLinkedinExporter.Services.Authentication
+@using System.Net.Http.Headers
+@using System.Text
+@using BlazorLinkedinExporter.Services.Authentication.AccessToken
+@using BlazorLinkedinExporter.Services.Authentication.Email
+@using BlazorLinkedinExporter.Services.Authentication.Profile
+@using Microsoft.Extensions.Options
+@inject AuthStateProvider AuthProvider
+@inject NavigationManager Navigation
+@inject ILocalStorageService LocalStorageService
+@inject HttpClient Client
+@inject IJSRuntime JS
+@inject IOptions<LinkedinConfigurationOptions> LinkedinConfig
+
+<h1>
+    Access Token Result
+</h1>
+<p>
+    @persistentAccessToken.AccessToken
+    <br />
+    Valid Until: @persistentAccessToken.ValidUntil
+</p>
+
+<h1>
+    Error
+</h1>
+<p>
+    @internalError
+</p>
+
+<h1>
+    Nav uri
+</h1>
+<p>
+    @Navigation.Uri
+</p>
+
+
+
+@code {
+    [Parameter]
+    public string? PageRoute { get; set; }
+    [Parameter]
+    public string? Action { get; set; } = null;
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "code")]
+    public string? AuthToken { get; set; }
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "state")]
+    public string? State { get; set; }
+    private string internalError = "";
+    private PersistentAccessToken persistentAccessToken = new PersistentAccessToken();
+
+    //For the accessToken get by form part
+    private string RedirectUri = "";
+    private string CodeVerifier = "";
+    private EditForm EditFormRef = new EditForm();
+
+    protected async override Task OnInitializedAsync()
+    {
+        try
+        {
+            Client.Timeout = TimeSpan.FromMinutes(1);
+            await OnInitializedAsyncImpl();
+        }
+        catch (Exception ex)
+        {
+            internalError = ex.ToString();
+        }
+    }
+
+    private async Task OnInitializedAsyncImpl()
+    {
+        if (Action == null)
+        {
+            internalError = new ArgumentNullException(nameof(Action)).ToString();
+            return;
+        }
+
+        if (LocalStorageService == null)
+        {
+            internalError = new ArgumentNullException(nameof(LocalStorageService)).ToString();
+            return;
+        }
+
+        if (Action.Equals("logout"))
+        {
+            await LocalStorageService.RemoveItemAsync(TokenConstants.AccessToken);
+            AuthProvider.NotifyUserLogout();
+            Navigation.NavigateTo("/");
+            return;
+        }
+
+        @if (Action.Equals("login"))
+        {
+            await RedirectToAuthLoginAsync();
+            return;
+        }
+
+    //TODO: MANAGE
+    https://docs.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow?view=li-lms-2022-07&tabs=HTTPS#failed-requests
+          //internalError - A code indicating one of these errors:
+          //user_cancelled_login - The member declined to log in to their LinkedIn account.
+          //user_cancelled_authorize - The member refused to authorize the permissions request from your application.
+          //error_description - A URL-encoded textual description that summarizes the internalError.
+
+
+        if (Action.Equals("login-callback"))
+        {
+            if (AuthToken == null)
+            {
+                AuthToken = await LocalStorageService.GetItemAsync<string>(TokenConstants.IdToken);
+                if (AuthToken == null)
+                {
+                    internalError = new ArgumentNullException(nameof(AuthToken)).ToString();
+                    return;
+                }
+            }
+            else
+            {
+                await LocalStorageService.SetItemAsync(TokenConstants.IdToken, AuthToken);
+            }
+
+            await GetAccessTokenAsync(AuthToken);
+        }
+
+        await base.OnInitializedAsync();
+    }
+
+    private string GetRedirectUri()
+    {
+        var uri = new Uri(Navigation.Uri);
+        var baseRedirect = $"{uri.Scheme}://{uri.Authority}";
+        var redirectUri = $"{baseRedirect}/authentication/login-callback";
+
+        return redirectUri;
+    }
+
+    private async Task<AccessTokenResponse?> GetTokenResponseAsync(string authToken)
+    {
+        var redirectUri = GetRedirectUri();
+        var codeVerifier = await LocalStorageService.GetItemAsync<string>("code_verifier");
+
+        var data = new KeyValuePair<string, string>[]
+        {
+new ("code", authToken),
+new ("grant_type", "authorization_code"),
+new ("client_id", Code.ClientId),
+//new ("code_verifier", codeVerifier), they won't let me use PKCE for now
+new ("redirect_uri", redirectUri),
+        };
+
+        var httpRequestMessage = new HttpRequestMessage
+        {
+            RequestUri = new Uri(LinkedinConfig.Value.AccessTokenUri),
+            Content = new FormUrlEncodedContent(data),
+            Method = HttpMethod.Post
+        };
+
+        var postResult = await Client.SendAsync(httpRequestMessage);
+        var result = await postResult.Content.ReadFromJsonAsync<AccessTokenResponse?>();
+
+        RedirectUri = redirectUri;
+        CodeVerifier = codeVerifier;
+
+        return result;
+    }
+
+    private async Task GetAccessTokenAsync(string authToken)
+    {
+        var tokenResponse = await GetTokenResponseAsync(authToken);
+
+        if (tokenResponse != null)
+        {
+            persistentAccessToken = new(tokenResponse);
+            await LocalStorageService.SetItemAsync(TokenConstants.AccessToken, persistentAccessToken);
+            if (!string.IsNullOrEmpty(persistentAccessToken.AccessToken))
+            {
+                var email = await GetEmailAsync(persistentAccessToken.AccessToken);
+                persistentAccessToken.Email = email;
+                await LocalStorageService.SetItemAsync(TokenConstants.AccessToken, persistentAccessToken);
+
+                var profile = await GetProfileAsync(persistentAccessToken.AccessToken);
+                var firstName = profile.FirstName?.Localized?.FirstOrDefault().Value ?? "";
+                var lastName = profile.LastName?.Localized?.FirstOrDefault().Value ?? "";
+                persistentAccessToken.FirstName = firstName;
+                persistentAccessToken.LastName = lastName;
+                await LocalStorageService.SetItemAsync(TokenConstants.AccessToken, persistentAccessToken);
+
+                AuthProvider.NotifyUserAuthentication(email, firstName, lastName);
+                //I force the load to notify that the state changed to every component
+                Navigation.NavigateTo("/", true);
+            }
+            else
+            {
+                internalError = "internalError while getting email, read the console log";
+            }
+        }
+        else
+        {
+            internalError = "null response, read the console log";
+        }
+    }
+
+    private async Task<GetProfileResponse> GetProfileAsync(string accessToken)
+    {
+        Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        var result = await Client.GetFromJsonAsync<GetProfileResponse>(LinkedinConfig.Value.ProfileUri);
+        return result ?? new GetProfileResponse();
+    }
+
+    private async Task<string> GetEmailAsync(string accessToken)
+    {
+        Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+        var result = await Client.GetFromJsonAsync<GetEmailResponse>(LinkedinConfig.Value.EmailUri);
+        return result?.Elements?.FirstOrDefault()?.EmailHandle?.Email ?? "";
+    }
+
+    private async Task RedirectToAuthLoginAsync()
+    {
+        Code.Init();
+
+        var uri = new Uri(Navigation.Uri);
+        var baseRedirect = $"{uri.Scheme}://{uri.Authority}";
+        var parameters = new Dictionary<string, object?>
+{
+{"client_id", Code.ClientId},
+{"response_type", "code"},
+{"redirect_uri", $"{baseRedirect}/authentication/login-callback"},
+//{"code_challenge_method", "S256"}, they won't let me use PKCE for now
+//{"code_challenge", Code.CodeChallenge}, they won't let me use PKCE for now
+{"scope", "r_liteprofile,r_emailaddress"},
+{"state", Code.State}
+};
+
+        await LocalStorageService.SetItemAsync("code_challenge", Code.CodeChallenge);
+        await LocalStorageService.SetItemAsync("code_verifier", Code.CodeVerifier);
+
+        Navigation.NavigateTo(Navigation.GetUriWithQueryParameters("https://www.linkedin.com/oauth/v2/authorization",
+        parameters), true);
+    }
+}

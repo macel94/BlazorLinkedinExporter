@@ -7,7 +7,7 @@ on:
       - master
 
     paths:
-      - src/Web/MACEL94.github.io/**
+      - src/Web/BlazorLinkedinExporter/**
 
 permissions:
   contents: write
@@ -21,13 +21,13 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Publish .NET Project
-        run: dotnet publish ./src/Web/MACEL94.github.io/MACEL94.github.io.csproj -c Release -o ./src/Web/MACEL94.github.io/release
+        run: dotnet publish ./src/Web/BlazorLinkedinExporter/BlazorLinkedinExporter.csproj -c Release -o ./src/Web/BlazorLinkedinExporter/release
 
       - name: Change base-tag in index.html from / to BlazorGitHubPagesDemo
-        run: sed -i 's/<base href="\/" \/>/<base href="\/BlazorLinkedinExporter\/" \/>/g' ./src/Web/MACEL94.github.io/release/wwwroot/index.html
+        run: sed -i 's/<base href="\/" \/>/<base href="\/BlazorLinkedinExporter\/" \/>/g' ./src/Web/BlazorLinkedinExporter/release/wwwroot/index.html
 
       - name: Commit wwwroot to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
         with:
-          folder: ./src/Web/MACEL94.github.io/release/wwwroot
+          folder: ./src/Web/BlazorLinkedinExporter/release/wwwroot
           branch: gh-pages
