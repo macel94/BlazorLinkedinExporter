@@ -25,8 +25,11 @@ jobs:
       - name: Publish .NET Project
         run: dotnet publish ./src/Web/BlazorLinkedinExporter/BlazorLinkedinExporter.csproj -c Release -o ./src/Web/BlazorLinkedinExporter/release
 
-      - name: Change base-tag in index.html from / to BlazorGitHubPagesDemo
-        run: sed -i 's/<base href="\/" \/>/<base href="\/BlazorLinkedinExporter\/" \/>/g' ./src/Web/BlazorLinkedinExporter/release/wwwroot/index.html
+      - name: Rewrite base href
+        uses: SteveSandersonMS/ghaction-rewrite-base-href@v1
+        with:
+          html_path: ./src/Web/BlazorLinkedinExporter/release/index.html
+          base_href: /BlazorLinkedinExporter/
 
       - name: Commit wwwroot to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
