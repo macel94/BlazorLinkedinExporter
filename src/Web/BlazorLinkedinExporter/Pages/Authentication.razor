@@ -102,13 +102,11 @@
             return;
         }
 
-    //TODO: MANAGE
-    https://docs.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow?view=li-lms-2022-07&tabs=HTTPS#failed-requests
-          //internalError - A code indicating one of these errors:
-          //user_cancelled_login - The member declined to log in to their LinkedIn account.
-          //user_cancelled_authorize - The member refused to authorize the permissions request from your application.
-          //error_description - A URL-encoded textual description that summarizes the internalError.
-
+        //TODO: MANAGE https://docs.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow?view=li-lms-2022-07&tabs=HTTPS#failed-requests
+        //internalError - A code indicating one of these errors:
+        //user_cancelled_login - The member declined to log in to their LinkedIn account.
+        //user_cancelled_authorize - The member refused to authorize the permissions request from your application.
+        //error_description - A URL-encoded textual description that summarizes the internalError.
 
         if (Action.Equals("login-callback"))
         {
@@ -132,35 +130,33 @@
         await base.OnInitializedAsync();
     }
 
-    private string GetRedirectUri()
-    {
+    private string GetLoginRedirectUri(){
         var uri = new Uri(Navigation.Uri);
-        var baseRedirect = $"{uri.Scheme}://{uri.Authority}";
-        var redirectUri = $"{baseRedirect}/authentication/login-callback";
+        var uriWithNoQuerystring = $"{uri.Scheme}://{uri.Authority}{uri.AbsolutePath}";
+        var redirectUri = uriWithNoQuerystring.EndsWith("login-callback") ? uriWithNoQuerystring : uriWithNoQuerystring.Replace("login", "login-callback");
 
         return redirectUri;
     }
 
     private async Task<AccessTokenResponse?> GetTokenResponseAsync(string authToken)
     {
-        var redirectUri = GetRedirectUri();
         var codeVerifier = await LocalStorageService.GetItemAsync<string>("code_verifier");
-
+        var redirectUri = GetLoginRedirectUri();
         var data = new KeyValuePair<string, string>[]
         {
-new ("code", authToken),
-new ("grant_type", "authorization_code"),
-new ("client_id", Code.ClientId),
-//new ("code_verifier", codeVerifier), they won't let me use PKCE for now
-new ("redirect_uri", redirectUri),
+            new ("code", authToken),
+            new ("grant_type", "authorization_code"),
+            new ("client_id", Code.ClientId),
+            //new ("code_verifier", codeVerifier), they won't let me use PKCE for now
+            new ("redirect_uri", redirectUri),
         };
 
         var httpRequestMessage = new HttpRequestMessage
-        {
-            RequestUri = new Uri(LinkedinConfig.Value.AccessTokenUri),
-            Content = new FormUrlEncodedContent(data),
-            Method = HttpMethod.Post
-        };
+            {
+                RequestUri = new Uri(LinkedinConfig.Value.AccessTokenUri),
+                Content = new FormUrlEncodedContent(data),
+                Method = HttpMethod.Post
+            };
 
         var postResult = await Client.SendAsync(httpRequestMessage);
         var result = await postResult.Content.ReadFromJsonAsync<AccessTokenResponse?>();
@@ -225,18 +221,17 @@ new ("redirect_uri", redirectUri),
     {
         Code.Init();
 
-        var uri = new Uri(Navigation.Uri);
-        var baseRedirect = $"{uri.Scheme}://{uri.Authority}";
+        var redirectUri = GetLoginRedirectUri();
         var parameters = new Dictionary<string, object?>
-{
-{"client_id", Code.ClientId},
-{"response_type", "code"},
-{"redirect_uri", $"{baseRedirect}/authentication/login-callback"},
-//{"code_challenge_method", "S256"}, they won't let me use PKCE for now
-//{"code_challenge", Code.CodeChallenge}, they won't let me use PKCE for now
-{"scope", "r_liteprofile,r_emailaddress"},
-{"state", Code.State}
-};
+        {
+            {"client_id", Code.ClientId},
+            {"response_type", "code"},
+            {"redirect_uri", redirectUri},
+            //{"code_challenge_method", "S256"}, they won't let me use PKCE for now
+            //{"code_challenge", Code.CodeChallenge}, they won't let me use PKCE for now
+            {"scope", "r_liteprofile,r_emailaddress"},
+            {"state", Code.State}
+        };
 
         await LocalStorageService.SetItemAsync("code_challenge", Code.CodeChallenge);
         await LocalStorageService.SetItemAsync("code_verifier", Code.CodeVerifier);
