@@ -2,7 +2,8 @@ env:
   DEPLOYMENT_NAME: GH_CICD_${{ github.run_id }}
   RESOURCE_GROUP: macel94.github.io
   RESOURCE_NAME_PREFIX: macel94github
-
+  AZURE_FUNCTIONAPP_PACKAGE_PATH: 'src/Backend/LinkedinProxy' # set this to the path to your web app project, defaults to the repository root
+  OUTPUT_FOLDER: 'output'
 name: Deploy Backend API to Az Function
 
 # permissions:
@@ -23,8 +24,30 @@ on:
   workflow_dispatch:
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      # TODO -VALIDATE BICEP
+      
+      - name: 'Publish Function'
+        shell: bash
+        run: |
+          pushd './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}'
+          dotnet publish --configuration Release --output './${{ env.OUTPUT_FOLDER }}'
+          popd
+          
+      - name: Package Functions
+        uses: actions/upload-artifact@v3
+        with:
+          name: functions
+          path: './${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}/${{ env.OUTPUT_FOLDER }}'
+      
+
   deploy-backend-iac:
     runs-on: ubuntu-latest
+    needs: [build]
     steps:
       - uses: actions/checkout@v3
 
@@ -33,11 +56,32 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: 🏗 Deploy infrastructure
-        run: |
-          az deployment group create --name $DEPLOYMENT_NAME --resource-group $RESOURCE_GROUP --template-file ./infrastructure/azure/main.bicep --parameters deploymentNameId=$DEPLOYMENT_NAME_ID resourceNamePrefix=$RESOURCE_NAME_PREFIX
+        id: deploy_infra
+        uses: azure/arm-deploy@v1
+        with:
+          resourceGroupName: ${{ env.RESOURCE_GROUP }}
+          template: ./infrastructure/azure/main.bicep
+          parameters: deploymentNameId="${{ github.run_id }}" resourceNamePrefix="${{ env.RESOURCE_NAME_PREFIX }}"
+  
+    outputs:
+      functionAppName: ${{ steps.deploy_infra.outputs.functionAppName }}
+  
+  deploy-function:
+    needs: [build, deploy-backend-iac]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: functions
+          path: ${{ env.OUTPUT_FOLDER }}
 
-        env:
-          DEPLOYMENT_NAME: ${{ env.DEPLOYMENT_NAME }}
-          DEPLOYMENT_NAME_ID: ${{ github.run_id }}
-          RESOURCE_GROUP: ${{ env.RESOURCE_GROUP }}
-          RESOURCE_NAME_PREFIX: ${{ env.RESOURCE_NAME_PREFIX }}
+      - uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy Function to Azure
+        uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ needs.deploy-backend-iac.outputs.functionAppName }}
+          package: ${{ env.OUTPUT_FOLDER }}
