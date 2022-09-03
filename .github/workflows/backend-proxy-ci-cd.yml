@@ -61,6 +61,7 @@ jobs:
         with:
           resourceGroupName: ${{ env.RESOURCE_GROUP }}
           template: ./infrastructure/azure/main.bicep
+          deploymentName: ${{ env.DEPLOYMENT_NAME }}
           parameters: deploymentNameId="${{ github.run_id }}" resourceNamePrefix="${{ env.RESOURCE_NAME_PREFIX }}" linkedinClientSecret="${{ secrets.LINKEDIN_CLIENT_SECRET }}"
   
     outputs:
