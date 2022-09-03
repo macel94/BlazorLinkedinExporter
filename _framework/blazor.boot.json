@@ -1,6 +1,7 @@
 {
   "cacheBootResources": true,
   "config": [
+    "appsettings.Development.json",
     "appsettings.json"
   ],
   "debugBuild": false,
