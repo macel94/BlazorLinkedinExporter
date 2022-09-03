@@ -11,7 +11,7 @@
   "resources": {
     "assembly": {
       "Blazored.LocalStorage.dll": "sha256-6RRoYeDP3d0xabXmcCMF66wXeJlXVPem28Trs8sQiis=",
-      "BlazorLinkedinExporter.dll": "sha256-bFGB3MH+WYJWBZHNZbtTlpFQC0JALpguQFICefb1I3M=",
+      "BlazorLinkedinExporter.dll": "sha256-Ox0Kia2YowCR\/J8zs408G8\/YzK5klcuktQIXoK17rfM=",
       "Microsoft.AspNetCore.Authorization.dll": "sha256-e8hVB7P5xQDoo7nnnUezFFu\/814vNzFQPO3\/i9siJyE=",
       "Microsoft.AspNetCore.Components.Authorization.dll": "sha256-1PlkBrEe8rmKOZzRgGajcqJHn4yYEayRbHJonUJfMog=",
       "Microsoft.AspNetCore.Components.dll": "sha256-qt9yv+xY7YxocyBUscUwPhWqosusNjx4LWlp4\/0ayVQ=",
