@@ -28,7 +28,7 @@ jobs:
       - name: Rewrite base href
         uses: SteveSandersonMS/ghaction-rewrite-base-href@v1
         with:
-          html_path: ./src/Web/BlazorLinkedinExporter/release/index.html
+          html_path: ./src/Web/BlazorLinkedinExporter/release/wwwroot/index.html
           base_href: /BlazorLinkedinExporter/
 
       - name: Commit wwwroot to GitHub Pages
