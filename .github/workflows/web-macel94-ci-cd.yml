@@ -21,8 +21,10 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Publish .NET Project
-
         run: dotnet publish ./src/Web/MACEL94.github.io/MACEL94.github.io.csproj -c Release -o ./src/Web/MACEL94.github.io/release
+
+      - name: Change base-tag in index.html from / to BlazorGitHubPagesDemo
+        run: sed -i 's/<base href="\/" \/>/<base href="\/BlazorLinkedinExporter\/" \/>/g' ./src/Web/MACEL94.github.io/release/wwwroot/index.html
 
       - name: Commit wwwroot to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
