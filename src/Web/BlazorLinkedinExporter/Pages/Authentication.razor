@@ -92,7 +92,7 @@
         {
             await LocalStorageService.RemoveItemAsync(TokenConstants.AccessToken);
             AuthProvider.NotifyUserLogout();
-            Navigation.NavigateTo("/");
+            Navigation.NavigateTo("", true);
             return;
         }
 
@@ -190,7 +190,7 @@
 
                 AuthProvider.NotifyUserAuthentication(email, firstName, lastName);
                 //I force the load to notify that the state changed to every component
-                Navigation.NavigateTo("/", true);
+                Navigation.NavigateTo("", true);
             }
             else
             {
