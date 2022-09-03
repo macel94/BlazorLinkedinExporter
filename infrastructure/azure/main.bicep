@@ -61,6 +61,7 @@ resource azFunctionApp 'Microsoft.Web/sites@2021-03-01' = {
     serverFarmId: azHostingPlan.id
     siteConfig: {
       linuxFxVersion: 'DOTNETCORE|6.0'
+      http20Enabled: true
     }
   }
 }
