@@ -7,8 +7,6 @@
 
 <h3>ClaimsPrincipal Data</h3>
 
-<button @onclick="GetClaimsPrincipalData">Get ClaimsPrincipal Data</button>
-
 <p>@authMessage</p>
 
 @if (claims.Count() > 0)
@@ -21,27 +19,27 @@
     </ul>
 }
 
-<p>@surnameMessage</p>
-
 @code {
     private string? authMessage;
-    private string? surnameMessage;
     private IEnumerable<Claim> claims = Enumerable.Empty<Claim>();
 
-    private async Task GetClaimsPrincipalData()
+    protected override async Task OnInitializedAsync()
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
         if (user?.Identity?.IsAuthenticated ?? false)
         {
-            authMessage = $"{user.Identity.Name} is authenticated.";
+            var surnameClaim = user.FindFirst(c => c.Type == ClaimTypes.Surname);
+            var surnameOrSpace = surnameClaim != null ? ($" {surnameClaim.Value} ") : " ";
+            authMessage = $"{user.Identity.Name}{surnameOrSpace}is authenticated.";
             claims = user.Claims;
-            surnameMessage = $"Surname: {user.FindFirst(c => c.Type == ClaimTypes.Surname)?.Value}";
         }
         else
         {
             authMessage = "The user is NOT authenticated.";
         }
+
+        await base.OnInitializedAsync();
     }
 }

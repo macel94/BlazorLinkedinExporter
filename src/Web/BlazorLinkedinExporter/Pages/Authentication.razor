@@ -13,7 +13,6 @@
 @inject NavigationManager Navigation
 @inject ILocalStorageService LocalStorageService
 @inject HttpClient Client
-@inject IJSRuntime JS
 @inject IOptions<LinkedinConfigurationOptions> LinkedinConfig
 
 <h1>
@@ -29,7 +28,7 @@
     Error
 </h1>
 <p>
-    @internalError
+    @DisplayedError
 </p>
 
 <h1>
@@ -47,22 +46,42 @@
     [Parameter]
     public string? Action { get; set; } = null;
 
-    [Parameter]
-    [SupplyParameterFromQuery(Name = "code")]
+    [Parameter, SupplyParameterFromQuery(Name = "code")]
     public string? AuthToken { get; set; }
-    [Parameter]
-    [SupplyParameterFromQuery(Name = "state")]
-    public string? State { get; set; }
-    private string internalError = "";
-    private PersistentAccessToken persistentAccessToken = new PersistentAccessToken();
+    [Parameter, SupplyParameterFromQuery(Name = "state")]
+    public string? StateReturnedByLinkedin { get; set; }
+    [Parameter, SupplyParameterFromQuery(Name = "error")]
+    public string? AuthError { get; set; }
 
-    //For the accessToken get by form part
+    private string DisplayedError = "";
+    private PersistentAccessToken persistentAccessToken = new PersistentAccessToken();
     private string RedirectUri = "";
     private string CodeVerifier = "";
-    private EditForm EditFormRef = new EditForm();
 
     protected async override Task OnInitializedAsync()
     {
+        if (!string.IsNullOrWhiteSpace(AuthError))
+        {
+            //user_cancelled_login - The member declined to log in to their LinkedIn account.
+            //user_cancelled_authorize - The member refused to authorize the permissions request from your application.
+            //error_description - A URL-encoded textual description that summarizes the internalError.
+
+            switch (AuthError)
+            {
+                case "user_cancelled_login":
+                    DisplayedError = "You declined to log in to their LinkedIn account. Please try again.";
+                    break;
+                case "user_cancelled_authorize":
+                    DisplayedError = "You refused to authorize the permissions request from your application. Please try again.";
+                    break;
+                default:
+                    DisplayedError = "An unknown error has occurred. Please try again.";
+                    break;
+            }
+            DisplayedError = AuthError;
+            return;
+        }
+
         try
         {
             Client.Timeout = TimeSpan.FromMinutes(1);
@@ -70,7 +89,7 @@
         }
         catch (Exception ex)
         {
-            internalError = ex.ToString();
+            DisplayedError = ex.ToString();
         }
     }
 
@@ -78,14 +97,12 @@
     {
         if (Action == null)
         {
-            internalError = new ArgumentNullException(nameof(Action)).ToString();
-            return;
+            throw new ArgumentNullException(nameof(Action));
         }
 
         if (LocalStorageService == null)
         {
-            internalError = new ArgumentNullException(nameof(LocalStorageService)).ToString();
-            return;
+            throw new ArgumentNullException(nameof(LocalStorageService));
         }
 
         if (Action.Equals("logout"))
@@ -102,12 +119,6 @@
             return;
         }
 
-        //TODO: MANAGE https://docs.microsoft.com/en-us/linkedin/shared/authentication/authorization-code-flow?view=li-lms-2022-07&tabs=HTTPS#failed-requests
-        //internalError - A code indicating one of these errors:
-        //user_cancelled_login - The member declined to log in to their LinkedIn account.
-        //user_cancelled_authorize - The member refused to authorize the permissions request from your application.
-        //error_description - A URL-encoded textual description that summarizes the internalError.
-
         if (Action.Equals("login-callback"))
         {
             if (AuthToken == null)
@@ -115,13 +126,21 @@
                 AuthToken = await LocalStorageService.GetItemAsync<string>(TokenConstants.IdToken);
                 if (AuthToken == null)
                 {
-                    internalError = new ArgumentNullException(nameof(AuthToken)).ToString();
-                    return;
+                    throw new ArgumentNullException(nameof(AuthToken));
                 }
             }
             else
             {
+                //State has to be there and needs to be the same of what we saved locally
+                var localState = await LocalStorageService.GetItemAsync<string?>(nameof(Code.State));
+                if (string.IsNullOrWhiteSpace(localState) || string.IsNullOrWhiteSpace(StateReturnedByLinkedin) || !localState.Equals(StateReturnedByLinkedin))
+                {
+                    throw new ArgumentException($"The local 'state' value: {localState} does not match the state returned by LinkedIn: {StateReturnedByLinkedin}", nameof(StateReturnedByLinkedin));
+                }
                 await LocalStorageService.SetItemAsync(TokenConstants.IdToken, AuthToken);
+
+                //Cleaning what we don't need anymore
+                await LocalStorageService.RemoveItemsAsync(new[] { nameof(Code.CodeChallenge), nameof(Code.CodeVerifier), nameof(Code.State) });
             }
 
             await GetAccessTokenAsync(AuthToken);
@@ -130,7 +149,8 @@
         await base.OnInitializedAsync();
     }
 
-    private string GetLoginRedirectUri(){
+    private string GetLoginRedirectUri()
+    {
         var uri = new Uri(Navigation.Uri);
         var uriWithNoQuerystring = $"{uri.Scheme}://{uri.Authority}{uri.AbsolutePath}";
         var redirectUri = uriWithNoQuerystring.EndsWith("login-callback") ? uriWithNoQuerystring : uriWithNoQuerystring.Replace("login", "login-callback");
@@ -140,7 +160,7 @@
 
     private async Task<AccessTokenResponse?> GetTokenResponseAsync(string authToken)
     {
-        var codeVerifier = await LocalStorageService.GetItemAsync<string>("code_verifier");
+        //var codeVerifier = await LocalStorageService.GetItemAsync<string>("code_verifier");
         var redirectUri = GetLoginRedirectUri();
         var data = new KeyValuePair<string, string>[]
         {
@@ -162,7 +182,7 @@
         var result = await postResult.Content.ReadFromJsonAsync<AccessTokenResponse?>();
 
         RedirectUri = redirectUri;
-        CodeVerifier = codeVerifier;
+        //CodeVerifier = codeVerifier;
 
         return result;
     }
@@ -194,12 +214,12 @@
             }
             else
             {
-                internalError = "internalError while getting email, read the console log";
+                DisplayedError = "internalError while getting email, read the console log";
             }
         }
         else
         {
-            internalError = "null response, read the console log";
+            DisplayedError = "null response, read the console log";
         }
     }
 
@@ -219,8 +239,7 @@
 
     private async Task RedirectToAuthLoginAsync()
     {
-        Code.Init();
-
+        await Code.InitAsync(LocalStorageService);
         var redirectUri = GetLoginRedirectUri();
         var parameters = new Dictionary<string, object?>
         {
@@ -233,10 +252,6 @@
             {"state", Code.State}
         };
 
-        await LocalStorageService.SetItemAsync("code_challenge", Code.CodeChallenge);
-        await LocalStorageService.SetItemAsync("code_verifier", Code.CodeVerifier);
-
-        Navigation.NavigateTo(Navigation.GetUriWithQueryParameters("https://www.linkedin.com/oauth/v2/authorization",
-        parameters), true);
+        Navigation.NavigateTo(Navigation.GetUriWithQueryParameters("https://www.linkedin.com/oauth/v2/authorization", parameters), true);
     }
 }
