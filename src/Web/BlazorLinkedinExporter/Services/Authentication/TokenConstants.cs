@@ -2,7 +2,7 @@
 {
     public static class TokenConstants
     {
-        public const string IdToken = "id_token";
-        public const string AccessToken = "authToken";
+        public const string InitialToken = "token";
+        public const string AccessToken = "accessToken";
     }
 }

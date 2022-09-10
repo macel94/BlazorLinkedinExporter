@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 
 namespace BlazorLinkedinExporter.Services.Authentication;
 
-public class Code
+public class OAuthCodeFlowPKCEHelper
 {
     public const string ClientId = "78t8sa3mzru5lu";
 

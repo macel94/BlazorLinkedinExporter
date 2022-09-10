@@ -19,9 +19,9 @@
     Access Token Result
 </h1>
 <p>
-    @persistentAccessToken.AccessToken
+    @persistentAccessToken?.AccessToken
     <br />
-    Valid Until: @persistentAccessToken.ValidUntil
+    Valid Until: @persistentAccessToken?.ValidUntil
 </p>
 
 <h1>
@@ -47,14 +47,14 @@
     public string? Action { get; set; } = null;
 
     [Parameter, SupplyParameterFromQuery(Name = "code")]
-    public string? AuthToken { get; set; }
+    public string? OAuthCodeReturnedByLinkedin { get; set; }
     [Parameter, SupplyParameterFromQuery(Name = "state")]
     public string? StateReturnedByLinkedin { get; set; }
     [Parameter, SupplyParameterFromQuery(Name = "error_description")]
     public string? AuthErrorDescription { get; set; }
 
     private string DisplayedError = "";
-    private PersistentAccessToken persistentAccessToken = new PersistentAccessToken();
+    private PersistentAccessToken? persistentAccessToken;
     private string RedirectUri = "";
     private string CodeVerifier = "";
 
@@ -108,29 +108,29 @@
 
         if (Action.Equals("login-callback"))
         {
-            if (AuthToken == null)
+            if (OAuthCodeReturnedByLinkedin == null)
             {
-                AuthToken = await LocalStorageService.GetItemAsync<string>(TokenConstants.IdToken);
-                if (AuthToken == null)
+                OAuthCodeReturnedByLinkedin = await LocalStorageService.GetItemAsync<string>(TokenConstants.InitialToken);
+                if (OAuthCodeReturnedByLinkedin == null)
                 {
-                    throw new ArgumentNullException(nameof(AuthToken));
+                    throw new ArgumentNullException(nameof(OAuthCodeReturnedByLinkedin));
                 }
             }
             else
             {
-                //State has to be there and needs to be the same of what we saved locally
-                var localState = await LocalStorageService.GetItemAsync<string?>(nameof(Code.State));
+                //State needs to have a value and it must be the same of what we saved locally
+                var localState = await LocalStorageService.GetItemAsync<string?>(nameof(OAuthCodeFlowPKCEHelper.State));
                 if (string.IsNullOrWhiteSpace(localState) || string.IsNullOrWhiteSpace(StateReturnedByLinkedin) || !localState.Equals(StateReturnedByLinkedin))
                 {
                     throw new ArgumentException($"The local 'state' value: {localState} does not match the state returned by LinkedIn: {StateReturnedByLinkedin}", nameof(StateReturnedByLinkedin));
                 }
-                await LocalStorageService.SetItemAsync(TokenConstants.IdToken, AuthToken);
+                await LocalStorageService.SetItemAsync(TokenConstants.InitialToken, OAuthCodeReturnedByLinkedin);
 
                 //Cleaning what we don't need anymore
-                await LocalStorageService.RemoveItemsAsync(new[] { nameof(Code.CodeChallenge), nameof(Code.CodeVerifier), nameof(Code.State) });
+                await LocalStorageService.RemoveItemsAsync(new[] { nameof(OAuthCodeFlowPKCEHelper.CodeChallenge), nameof(OAuthCodeFlowPKCEHelper.CodeVerifier), nameof(OAuthCodeFlowPKCEHelper.State) });
             }
 
-            await GetAccessTokenAsync(AuthToken);
+            await GetAccessTokenAsync();
         }
 
         await base.OnInitializedAsync();
@@ -153,7 +153,7 @@
         {
             new ("code", authToken),
             new ("grant_type", "authorization_code"),
-            new ("client_id", Code.ClientId),
+            new ("client_id", OAuthCodeFlowPKCEHelper.ClientId),
             //new ("code_verifier", codeVerifier), they won't let me use PKCE for now
             new ("redirect_uri", redirectUri),
         };
@@ -174,9 +174,14 @@
         return result;
     }
 
-    private async Task GetAccessTokenAsync(string authToken)
+    private async Task GetAccessTokenAsync()
     {
-        var tokenResponse = await GetTokenResponseAsync(authToken);
+        if (string.IsNullOrWhiteSpace(OAuthCodeReturnedByLinkedin))
+        {
+            throw new Exception($"To be able to execute {nameof(GetAccessTokenAsync)}, {nameof(OAuthCodeReturnedByLinkedin)} needs to have a value");
+        }
+
+        var tokenResponse = await GetTokenResponseAsync(OAuthCodeReturnedByLinkedin);
 
         if (tokenResponse != null)
         {
@@ -194,8 +199,9 @@
                 persistentAccessToken.FirstName = firstName;
                 persistentAccessToken.LastName = lastName;
                 await LocalStorageService.SetItemAsync(TokenConstants.AccessToken, persistentAccessToken);
-
                 AuthProvider.NotifyUserAuthentication(email, firstName, lastName);
+                await LocalStorageService.RemoveItemAsync(TokenConstants.InitialToken);
+
                 //I force the load to notify that the state changed to every component
                 Navigation.NavigateTo("", true);
             }
@@ -226,17 +232,17 @@
 
     private async Task RedirectToAuthLoginAsync()
     {
-        await Code.InitAsync(LocalStorageService);
+        await OAuthCodeFlowPKCEHelper.InitAsync(LocalStorageService);
         var redirectUri = GetLoginRedirectUri();
         var parameters = new Dictionary<string, object?>
         {
-            {"client_id", Code.ClientId},
+            {"client_id", OAuthCodeFlowPKCEHelper.ClientId},
             {"response_type", "code"},
             {"redirect_uri", redirectUri},
             //{"code_challenge_method", "S256"}, they won't let me use PKCE for now
             //{"code_challenge", Code.CodeChallenge}, they won't let me use PKCE for now
             {"scope", "r_liteprofile,r_emailaddress"},
-            {"state", Code.State}
+            {"state", OAuthCodeFlowPKCEHelper.State}
         };
 
         Navigation.NavigateTo(Navigation.GetUriWithQueryParameters("https://www.linkedin.com/oauth/v2/authorization", parameters), true);

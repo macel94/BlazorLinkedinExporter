@@ -54,7 +54,7 @@ public class AuthStateProvider : AuthenticationStateProvider
 
     public void NotifyUserAuthentication(string email, string firstName, string lastName)
     {
-        var authenticatedUser = new ClaimsPrincipal(new ClaimsIdentity(new[] { new Claim(ClaimTypes.Email, email), new Claim(ClaimTypes.Name, firstName), new Claim(ClaimTypes.Surname, lastName) }, "jwtAuthType"));
+        ClaimsPrincipal authenticatedUser = new (new ClaimsIdentity(new Claim[] { new (ClaimTypes.Email, email), new (ClaimTypes.Name, firstName), new (ClaimTypes.Surname, lastName) }, "jwtAuthType"));
         var authState = Task.FromResult(new AuthenticationState(authenticatedUser));
         NotifyAuthenticationStateChanged(authState);
     }

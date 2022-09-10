@@ -10,6 +10,7 @@ namespace BlazorLinkedinExporter.Services.Authentication
         public string? FirstName { get; set; }
         public string? LastName { get; set; }
 
+        //Used during deserialization
         public PersistentAccessToken()
         {
             AccessToken = string.Empty;
