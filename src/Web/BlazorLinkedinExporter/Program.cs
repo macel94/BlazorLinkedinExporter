@@ -24,17 +24,9 @@ builder.Services.AddBlazoredLocalStorage();
 //builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>()
 //    .CreateClient("WebAPI"));
 
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+builder.Services.AddScoped(sp => new HttpClient());
 builder.Services.AddFluentUIComponents();
-
-//builder.Services.AddOptions();
-//builder.Services.AddOidcAuthentication(options =>
-//{
-//    builder.Configuration.Bind("Local", options.ProviderOptions);
-//    options.ProviderOptions.DefaultScopes.Add("r_emailaddress");
-//    options.ProviderOptions.DefaultScopes.Add("r_liteprofile");
-//});
-builder.Services.AddLinkedinAuthenticationClient();
+builder.Services.AddLinkedinAuthenticationStateProvider();
 var app = builder.Build();
 
 await app.RunAsync();

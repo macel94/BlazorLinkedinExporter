@@ -5,7 +5,7 @@ namespace BlazorLinkedinExporter.Services
 {
     public static class ServicesExtensions
     {
-        public static IServiceCollection AddLinkedinAuthenticationClient(this IServiceCollection services)
+        public static IServiceCollection AddLinkedinAuthenticationStateProvider(this IServiceCollection services)
         {
             services.AddScoped<AuthenticationStateProvider, AuthStateProvider>();
             services.AddScoped<AuthStateProvider, AuthStateProvider>();
