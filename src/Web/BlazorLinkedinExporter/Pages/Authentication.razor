@@ -50,8 +50,8 @@
     public string? AuthToken { get; set; }
     [Parameter, SupplyParameterFromQuery(Name = "state")]
     public string? StateReturnedByLinkedin { get; set; }
-    [Parameter, SupplyParameterFromQuery(Name = "error")]
-    public string? AuthError { get; set; }
+    [Parameter, SupplyParameterFromQuery(Name = "error_description")]
+    public string? AuthErrorDescription { get; set; }
 
     private string DisplayedError = "";
     private PersistentAccessToken persistentAccessToken = new PersistentAccessToken();
@@ -60,25 +60,12 @@
 
     protected async override Task OnInitializedAsync()
     {
-        if (!string.IsNullOrWhiteSpace(AuthError))
+        if (!string.IsNullOrWhiteSpace(AuthErrorDescription))
         {
             //user_cancelled_login - The member declined to log in to their LinkedIn account.
             //user_cancelled_authorize - The member refused to authorize the permissions request from your application.
             //error_description - A URL-encoded textual description that summarizes the internalError.
-
-            switch (AuthError)
-            {
-                case "user_cancelled_login":
-                    DisplayedError = "You declined to log in to their LinkedIn account. Please try again.";
-                    break;
-                case "user_cancelled_authorize":
-                    DisplayedError = "You refused to authorize the permissions request from your application. Please try again.";
-                    break;
-                default:
-                    DisplayedError = "An unknown error has occurred. Please try again.";
-                    break;
-            }
-            DisplayedError = AuthError;
+            DisplayedError = AuthErrorDescription;
             return;
         }
 
