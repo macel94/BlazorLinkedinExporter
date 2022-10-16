@@ -1,30 +1,57 @@
 ﻿@page "/"
 @using System.Security.Claims
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.Fast.Components.FluentUI
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Index</PageTitle>
 
-<h3>ClaimsPrincipal Data</h3>
-
-<p>@authMessage</p>
-
-@if (claims.Count() > 0)
+@if (IsLoading)
 {
-    <ul>
-        @foreach (var claim in claims)
-        {
-            <li>@claim.Type: @claim.Value</li>
-        }
-    </ul>
+    <FluentProgressRing />
+}
+else
+{
+    <p>@authMessage</p>
+
+    @if (_rawClaims.Count() > 0)
+    {
+        <h3>Claims Data</h3>
+
+        <FluentTextField @oninput="FilterChanged">Filter by @(nameof(Claim)) value</FluentTextField>
+        <FluentDataGrid TItem="@Claim" id="claimsGrid" RowsData="@_sortedFilteredClaims" ColumnDefinitions="@claimGridColumns" GridTemplateColumns="1fr 3fr 2fr">
+            <HeaderCellTemplate>
+                <FluentButton @onclick=@(()=>SortColumn(context))>
+                    @context.Title
+                    @if (context.Title == lastSortColumn?.Title)
+                    {
+                        @(isAscending ? " ↑" : " ↓")
+                    }
+                </FluentButton>
+            </HeaderCellTemplate>
+        </FluentDataGrid>
+    }
 }
 
 @code {
     private string? authMessage;
-    private IEnumerable<Claim> claims = Enumerable.Empty<Claim>();
+    private List<Claim> _rawClaims = new();
+    private List<Claim> _sortedFilteredClaims = new();
+    private List<ColumnDefinition<Claim>> claimGridColumns = new(){
+        new(nameof(Claim.Issuer), x => x.Issuer),
+        new(nameof(Claim.Type), x => x.Type),
+        new(nameof(Claim.Value), x => x.Value),
+    };
+    bool IsLoading;
+    private bool isAscending = false;
+    public string filterValue = "";
+    private ColumnDefinition<Claim>? lastSortColumn = null;
 
     protected override async Task OnInitializedAsync()
     {
+        await base.OnInitializedAsync();
+        IsLoading = true;
+
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
 
@@ -33,13 +60,78 @@
             var surnameClaim = user.FindFirst(c => c.Type == ClaimTypes.Surname);
             var surnameOrSpace = surnameClaim != null ? ($" {surnameClaim.Value} ") : " ";
             authMessage = $"{user.Identity.Name}{surnameOrSpace}is authenticated.";
-            claims = user.Claims;
+            _rawClaims = user.Claims.ToList();
+            _sortedFilteredClaims = _rawClaims;
         }
         else
         {
             authMessage = "The user is NOT authenticated.";
         }
 
-        await base.OnInitializedAsync();
+        // Just to simulate a long call
+        await Task.Delay(1000);
+
+        IsLoading = false;
+    }
+
+    private void FilterChanged(ChangeEventArgs args)
+    {
+        var filter = args.Value as string;
+
+        if (string.IsNullOrWhiteSpace(filter))
+        {
+            _sortedFilteredClaims = _rawClaims;
+        }
+        else
+        {
+            _sortedFilteredClaims = _rawClaims.Where(x => x.Value.Contains(filter)).ToList();
+        }
+        if (lastSortColumn != null)
+        {
+            _sortedFilteredClaims.Sort(new CustomComparer(lastSortColumn.FieldSelector!, isAscending));
+        }
+    }
+
+    private void SortColumn(ColumnDefinition<Claim> columnDefinition)
+    {
+        if (lastSortColumn?.Title == columnDefinition.Title)
+        {
+            if (isAscending)
+            {
+                isAscending = !isAscending;
+            }
+            else{
+                lastSortColumn = null;
+                isAscending = true;
+                return;
+            }
+        }
+        else
+        {
+            lastSortColumn = columnDefinition;
+            isAscending = true;
+        }
+        _sortedFilteredClaims.Sort(new CustomComparer(columnDefinition.FieldSelector!, isAscending));
+    }
+
+    class CustomComparer : IComparer<Claim>
+    {
+        Func<Claim, object> _selector;
+        bool _isAscending;
+
+        public CustomComparer(Func<Claim, object> selector, bool isAscending)
+        {
+            _selector = selector;
+            _isAscending = isAscending;
+        }
+
+        int IComparer<Claim>.Compare(Claim? x, Claim? y)
+        {
+            var xs = _selector(x!) as string;
+            var ys = _selector(y!) as string;
+            if (xs == null || ys == null)
+                return 0;
+            return string.Compare(xs, ys) * (_isAscending ? 1 : -1);
+        }
     }
 }
